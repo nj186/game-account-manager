@@ -1,0 +1,1604 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>游戏账号管理器</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-primary: #0f1419;
+      --bg-card: #1a1f2e;
+      --bg-card-hover: #1e2436;
+      --bg-input: #141824;
+      --border: #2a3040;
+      --border-light: #353d50;
+      --accent: #c9a96e;
+      --accent-dim: #a08550;
+      --accent-glow: rgba(201, 169, 110, 0.15);
+      --green: #4ade80;
+      --green-dim: rgba(74, 222, 128, 0.15);
+      --amber: #f59e0b;
+      --amber-dim: rgba(245, 158, 11, 0.15);
+      --red: #ef4444;
+      --red-dim: rgba(239, 68, 68, 0.15);
+      --text-primary: #e2e8f0;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --font-cn: 'Noto Sans SC', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    body {
+      font-family: var(--font-cn);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ===== Header ===== */
+    .header {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 2px;
+      white-space: nowrap;
+    }
+
+    .logo span {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 400;
+      margin-left: 8px;
+      letter-spacing: 0;
+    }
+
+    .header-center {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .date-nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .date-nav button {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .date-nav button:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .date-input {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .date-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .summary-badge {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+    }
+
+    .summary-badge strong {
+      color: var(--green);
+      font-weight: 500;
+    }
+
+    /* ===== Toolbar ===== */
+    .toolbar {
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .search-box {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      width: 220px;
+      font-family: var(--font-cn);
+    }
+
+    .search-box::placeholder { color: var(--text-muted); }
+    .search-box:focus { outline: none; border-color: var(--accent); }
+
+    .filter-btn {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: var(--font-cn);
+      transition: all 0.15s;
+    }
+
+    .filter-btn:hover, .filter-btn.active {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .server-select {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 8px 28px 8px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: var(--font-cn);
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238B9BB4' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      transition: all 0.15s;
+      min-width: 130px;
+    }
+    .server-select:focus { outline: none; border-color: var(--accent); }
+    .server-select option { background: var(--bg-card); color: var(--text-primary); }
+
+    .toolbar-label {
+      color: var(--text-muted);
+      font-size: 13px;
+      font-family: var(--font-cn);
+      margin-left: 4px;
+      white-space: nowrap;
+    }
+
+    .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ===== Buttons ===== */
+    .btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: var(--font-cn);
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--bg-input);
+      color: var(--text-secondary);
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .btn:hover { border-color: var(--text-muted); color: var(--text-primary); }
+
+    .btn-accent {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #1a1a1a;
+      font-weight: 500;
+    }
+
+    .btn-accent:hover {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn-danger { color: var(--red); }
+    .btn-danger:hover { border-color: var(--red); background: var(--red-dim); }
+
+    .btn-sm { padding: 4px 10px; font-size: 12px; }
+
+    /* ===== Main Content ===== */
+    .main {
+      padding: 0 24px 80px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
+    .empty-state h3 { font-size: 18px; color: var(--text-secondary); margin-bottom: 8px; }
+    .empty-state p { font-size: 14px; margin-bottom: 24px; }
+
+    /* ===== Account Card ===== */
+    .account-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      transition: border-color 0.15s;
+    }
+
+    .account-card:hover { border-color: var(--border-light); }
+
+    .account-header {
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+      gap: 12px;
+    }
+
+    .account-header:hover { background: var(--bg-card-hover); }
+
+    .account-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+      min-width: 0;
+      flex-wrap: wrap;
+    }
+
+    .first-char {
+      display: none;
+      width: 100%;
+      font-size: 12px;
+      color: var(--text-secondary);
+      gap: 10px;
+      align-items: center;
+      margin-top: 2px;
+    }
+    .account-card:not(.expanded) .first-char { display: inline-flex; }
+    .first-char b { font-weight: 500; }
+    .fc-done.checked { color: var(--green); }
+
+    .expand-icon {
+      color: var(--text-muted);
+      transition: transform 0.2s;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+
+    .account-card.expanded .expand-icon { transform: rotate(90deg); }
+
+    .account-name {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .account-server {
+      font-size: 12px;
+      color: var(--text-muted);
+      background: var(--bg-input);
+      padding: 2px 8px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .account-progress {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .progress-bar {
+      width: 80px;
+      height: 6px;
+      background: var(--bg-input);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--green);
+      border-radius: 3px;
+      transition: width 0.3s;
+    }
+
+    .progress-text {
+      font-size: 12px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      min-width: 36px;
+    }
+
+    .account-actions {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .account-actions button {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px 6px;
+      border-radius: 4px;
+      font-size: 14px;
+      transition: all 0.15s;
+    }
+
+    .account-actions button:hover { color: var(--text-primary); background: var(--bg-input); }
+    .account-actions button.delete-btn:hover { color: var(--red); }
+
+    /* ===== Character Table ===== */
+    .account-body {
+      display: none;
+      border-top: 1px solid var(--border);
+    }
+
+    .account-card.expanded .account-body { display: block; }
+
+    .char-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .char-table th {
+      text-align: left;
+      padding: 10px 18px;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 400;
+      background: var(--bg-input);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .char-table td {
+      padding: 10px 18px;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    .char-table tr:last-child td { border-bottom: none; }
+    .char-table tr:hover td { background: var(--bg-card-hover); }
+
+    .char-name {
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .char-activity {
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+
+    .char-activity.high { color: var(--green); }
+    .char-activity.mid { color: var(--amber); }
+    .char-activity.low { color: var(--text-muted); }
+
+    .vip-badge {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .vip-badge.valid { color: var(--green); background: var(--green-dim); }
+    .vip-badge.warning { color: var(--amber); background: var(--amber-dim); }
+    .vip-badge.expired { color: var(--red); background: var(--red-dim); }
+
+    .daily-check {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .check-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg-input);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      font-size: 16px;
+      color: var(--text-muted);
+    }
+
+    .check-btn:hover {
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    .check-btn.checked {
+      background: var(--green-dim);
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    .check-btn.checked:active {
+      transform: scale(0.9);
+    }
+
+    .check-btn.yabiao-checked {
+      background: var(--amber-dim);
+      border-color: var(--amber);
+      color: var(--amber);
+    }
+
+    .batch-bar {
+      padding: 10px 18px;
+      background: var(--bg-input);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    /* ===== Modal ===== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-overlay.show { display: flex; }
+
+    .modal {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      width: 100%;
+      max-width: 520px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-header h3 {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--accent);
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 18px;
+      padding: 4px;
+    }
+
+    .modal-close:hover { color: var(--text-primary); }
+
+    .modal-body { padding: 20px; }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .form-group input, .form-group select {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: var(--font-cn);
+    }
+
+    .form-group input:focus, .form-group select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .char-form-list {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .char-form-item {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: 1fr 90px 1fr 32px;
+      gap: 8px;
+      align-items: end;
+    }
+
+    .char-form-item:last-child { border-bottom: none; }
+
+    .char-form-item .char-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    .char-form-item input {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 6px 8px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: var(--font-cn);
+    }
+
+    .char-form-item input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .char-remove {
+      width: 30px;
+      height: 30px;
+      border-radius: 6px;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      background: rgba(239, 68, 68, 0.12);
+      color: #ef4444;
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      align-self: end;
+      margin-bottom: 1px;
+    }
+    .char-remove:hover:not([disabled]) {
+      background: #ef4444;
+      color: #fff;
+    }
+    .char-remove[disabled] {
+      opacity: 0.25;
+      cursor: not-allowed;
+    }
+
+    .add-char-btn {
+      margin-top: 10px;
+    }
+
+    .modal-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    /* ===== Import/Export Modal ===== */
+    .io-textarea {
+      width: 100%;
+      min-height: 200px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 12px;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      resize: vertical;
+    }
+
+    .io-textarea:focus { outline: none; border-color: var(--accent); }
+
+    .io-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 8px;
+    }
+
+    /* ===== Stats Bar ===== */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      padding: 0 24px 16px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      color: var(--text-primary);
+    }
+
+    .stat-value.green { color: var(--green); }
+    .stat-value.red { color: var(--red); }
+
+    /* ===== Toast ===== */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      z-index: 300;
+      opacity: 0;
+      transition: all 0.3s;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 768px) {
+      .header { padding: 12px 16px; }
+      .main { padding: 0 12px 80px; }
+      .stats-bar { padding: 0 12px 12px; grid-template-columns: repeat(2, 1fr); }
+      .toolbar { padding: 10px 12px; }
+      .search-box { width: 160px; }
+      .char-table th, .char-table td { padding: 8px 10px; }
+      .account-header { padding: 12px 14px; flex-wrap: wrap; }
+      .form-row { grid-template-columns: 1fr; }
+      .char-form-item { grid-template-columns: 1fr; }
+      .progress-bar { width: 50px; }
+    }
+
+    /* ===== Scrollbar ===== */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--border-light); }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <div class="header-left">
+    <div class="logo">游戏<span>账号管理器</span></div>
+  </div>
+  <div class="header-center">
+    <div class="date-nav">
+      <button onclick="changeDate(-1)" title="前一天">&#9664;</button>
+      <input type="date" class="date-input" id="datePicker" onchange="onDateChange()" />
+      <button onclick="changeDate(1)" title="后一天">&#9654;</button>
+      <button onclick="goToday()" class="btn btn-sm" style="margin-left:4px">今天</button>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="summary-badge" id="summaryBadge">今日 <strong>0/0</strong></div>
+  </div>
+</header>
+
+<!-- Stats -->
+<div class="stats-bar" id="statsBar">
+  <div class="stat-card">
+    <div class="stat-label">账号总数</div>
+    <div class="stat-value" id="statAccounts">0</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">今日完成</div>
+    <div class="stat-value green" id="statDone">0</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">今日未完成</div>
+    <div class="stat-value" id="statPending">0</div>
+  </div>
+</div>
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <div class="toolbar-left">
+    <input type="text" class="search-box" id="searchBox" placeholder="搜索账号名 / 角色名..." oninput="render()" />
+    <button class="filter-btn" id="filterIncomplete" onclick="toggleFilter()">仅看未完成</button>
+    <button class="filter-btn" id="filterDone" onclick="toggleDone()">仅看完成</button>
+    <select class="server-select" id="serverFilter" onchange="render()">
+      <option value="">全部服务器</option>
+    </select>
+    <span class="toolbar-label">排序</span>
+    <select class="server-select" id="sortBy" onchange="render()">
+      <option value="name">账号名称</option>
+      <option value="order">添加先后</option>
+      <option value="done">日常完成度</option>
+    </select>
+  </div>
+  <div class="toolbar-right">
+    <button class="btn" onclick="openImportExport()">导入 / 导出</button>
+    <button class="btn btn-accent" onclick="openAddAccount()">+ 添加账号</button>
+  </div>
+</div>
+
+<!-- Main Content -->
+<div class="main" id="accountList"></div>
+
+<!-- Add/Edit Account Modal -->
+<div class="modal-overlay" id="accountModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="accountModalTitle">添加账号</h3>
+      <button class="modal-close" onclick="closeModal('accountModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>账号名称 / 备注</label>
+        <input type="text" id="formAccountName" placeholder="如：账号1、主号、小号..." />
+      </div>
+      <div class="form-group">
+        <label>服务器（可选）</label>
+        <input type="text" id="formAccountServer" placeholder="如：烟雨楼台、剑阁闻铃..." />
+      </div>
+      <div class="form-group">
+        <label>角色信息（第一个角色必填，最多 6 个，可随时增加或删除）</label>
+        <div class="char-form-list" id="charFormList"></div>
+        <button type="button" class="btn btn-sm add-char-btn" id="addCharBtn" onclick="addChar()">＋ 增加角色</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('accountModal')">取消</button>
+      <button class="btn btn-accent" id="accountSubmitBtn" onclick="submitAccount()">确认添加</button>
+    </div>
+  </div>
+</div>
+
+<!-- Import/Export Modal -->
+<div class="modal-overlay" id="ioModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>导入 / 导出数据</h3>
+      <button class="modal-close" onclick="closeModal('ioModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="btn btn-sm" onclick="exportData()">导出 JSON</button>
+        <button class="btn btn-sm" onclick="document.getElementById('importFile').click()">从文件导入</button>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importFromFile(event)" />
+      </div>
+      <textarea class="io-textarea" id="ioTextarea" placeholder="导出的 JSON 数据会显示在这里，也可以粘贴外部数据后点击导入"></textarea>
+      <div class="io-hint">支持粘贴 JSON 数据后点击「导入」按钮</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('ioModal')">关闭</button>
+      <button class="btn btn-accent" onclick="importFromTextarea()">导入</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== Data Layer =====
+const STORAGE_KEY = 'nsh_account_manager';
+let state = {
+  accounts: [],
+  dailyRecords: {},
+  currentDate: todayStr(),
+  editingAccountId: null,
+  filterIncomplete: false,
+  filterDone: false,
+  expandedAccounts: new Set()
+};
+
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+function daysBetween(dateStr1, dateStr2) {
+  const d1 = new Date(dateStr1 + 'T00:00:00');
+  const d2 = new Date(dateStr2 + 'T00:00:00');
+  return Math.floor((d2 - d1) / (1000 * 60 * 60 * 24));
+}
+
+function updateVipDays() {
+  const today = todayStr();
+  state.accounts.forEach(account => {
+    account.characters.forEach(ch => {
+      // 兼容旧数据：如果有 vipExpiry（日期格式），转换为 vipDays
+      if (ch.vipExpiry && !ch.vipDays && !ch.vipLastUpdated) {
+        const expiry = new Date(ch.vipExpiry + 'T23:59:59');
+        const now = new Date();
+        const diffDays = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+        ch.vipDays = Math.max(0, diffDays);
+        ch.vipLastUpdated = today;
+        delete ch.vipExpiry;
+      }
+      // 自动扣减：根据上次更新日期计算经过的天数
+      if (ch.vipDays !== undefined && ch.vipDays !== null && ch.vipLastUpdated) {
+        const daysPassed = daysBetween(ch.vipLastUpdated, today);
+        if (daysPassed > 0) {
+          ch.vipDays = Math.max(0, ch.vipDays - daysPassed);
+          ch.vipLastUpdated = today;
+        }
+      }
+    });
+  });
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      state.accounts = parsed.accounts || [];
+      state.dailyRecords = parsed.dailyRecords || {};
+      updateVipDays(); // 加载时自动扣减会员天数
+    }
+  } catch (e) {
+    console.error('Failed to load state:', e);
+  }
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      accounts: state.accounts,
+      dailyRecords: state.dailyRecords
+    }));
+  } catch (e) {
+    console.error('Failed to save state:', e);
+  }
+}
+
+// ===== Date Navigation =====
+function onDateChange() {
+  state.currentDate = document.getElementById('datePicker').value;
+  render();
+}
+
+function changeDate(delta) {
+  const d = new Date(state.currentDate + 'T00:00:00');
+  d.setDate(d.getDate() + delta);
+  state.currentDate = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  document.getElementById('datePicker').value = state.currentDate;
+  render();
+}
+
+function goToday() {
+  state.currentDate = todayStr();
+  document.getElementById('datePicker').value = state.currentDate;
+  render();
+}
+
+// ===== Daily Record =====
+function getRecordKey(accountId, charId) {
+  return accountId + '_' + charId;
+}
+
+function isCharDone(accountId, charId) {
+  const dayRecords = state.dailyRecords[state.currentDate];
+  if (!dayRecords) return false;
+  return dayRecords[getRecordKey(accountId, charId)] === true;
+}
+
+function toggleCharDone(accountId, charId) {
+  if (!state.dailyRecords[state.currentDate]) {
+    state.dailyRecords[state.currentDate] = {};
+  }
+  const key = getRecordKey(accountId, charId);
+  const wasDone = state.dailyRecords[state.currentDate][key] === true;
+  state.dailyRecords[state.currentDate][key] = !wasDone;
+
+  // 打卡时活跃度 +15，取消打卡不扣活跃度
+  if (!wasDone) {
+    const account = state.accounts.find(a => a.id === accountId);
+    if (account) {
+      const character = account.characters.find(ch => ch.id === charId);
+      if (character) {
+        const currentActivity = parseInt(character.activity) || 0;
+        character.activity = String(currentActivity + 15);
+      }
+    }
+  }
+
+  saveState();
+  render();
+}
+
+// ===== 押镖 =====
+function getYaBiaoKey(accountId, charId) {
+  return 'yb_' + accountId + '_' + charId;
+}
+
+function isCharYaBiao(accountId, charId) {
+  const dayRecords = state.dailyRecords[state.currentDate];
+  if (!dayRecords) return false;
+  return dayRecords[getYaBiaoKey(accountId, charId)] === true;
+}
+
+function toggleYaBiao(accountId, charId) {
+  if (!state.dailyRecords[state.currentDate]) {
+    state.dailyRecords[state.currentDate] = {};
+  }
+  const key = getYaBiaoKey(accountId, charId);
+  const wasYB = state.dailyRecords[state.currentDate][key] === true;
+  state.dailyRecords[state.currentDate][key] = !wasYB;
+
+  // 押镖扣除50活跃度，取消押镖不恢复
+  if (!wasYB) {
+    const account = state.accounts.find(a => a.id === accountId);
+    if (account) {
+      const character = account.characters.find(ch => ch.id === charId);
+      if (character) {
+        const currentActivity = parseInt(character.activity) || 0;
+        character.activity = String(Math.max(0, currentActivity - 50));
+      }
+    }
+  }
+
+  saveState();
+  render();
+}
+
+function batchCompleteAll(accountId, done) {
+  const account = state.accounts.find(a => a.id === accountId);
+  if (!account) return;
+  if (!state.dailyRecords[state.currentDate]) {
+    state.dailyRecords[state.currentDate] = {};
+  }
+  account.characters.forEach(ch => {
+    const key = getRecordKey(accountId, ch.id);
+    const wasDone = state.dailyRecords[state.currentDate][key] === true;
+    state.dailyRecords[state.currentDate][key] = done;
+
+    // 批量完成时，只对从未完成变为完成的角色加活跃度
+    if (!wasDone && done) {
+      const currentActivity = parseInt(ch.activity) || 0;
+      ch.activity = String(currentActivity + 15);
+    }
+  });
+  saveState();
+  render();
+}
+
+// ===== VIP Status =====
+function getVipStatus(vipDays) {
+  if (vipDays === undefined || vipDays === null || vipDays === '') {
+    return { text: '未设置', cls: '' };
+  }
+  const days = parseInt(vipDays);
+  if (isNaN(days)) return { text: '未设置', cls: '' };
+  if (days <= 0) return { text: '已过期', cls: 'expired' };
+  if (days <= 7) return { text: days + '天', cls: 'warning' };
+  return { text: days + '天', cls: 'valid' };
+}
+
+// ===== Activity Level =====
+function getActivityClass(activity) {
+  const n = parseInt(activity);
+  if (isNaN(n)) return 'low';
+  if (n >= 8000) return 'high';
+  if (n >= 4000) return 'mid';
+  return 'low';
+}
+
+// ===== Filter & Search =====
+function toggleFilter() {
+  state.filterIncomplete = !state.filterIncomplete;
+  if (state.filterIncomplete) {
+    state.filterDone = false;
+    document.getElementById('filterDone').classList.remove('active');
+  }
+  document.getElementById('filterIncomplete').classList.toggle('active', state.filterIncomplete);
+  render();
+}
+
+function toggleDone() {
+  state.filterDone = !state.filterDone;
+  if (state.filterDone) {
+    state.filterIncomplete = false;
+    document.getElementById('filterIncomplete').classList.remove('active');
+  }
+  document.getElementById('filterDone').classList.toggle('active', state.filterDone);
+  render();
+}
+
+function getFilteredAccounts() {
+  const query = document.getElementById('searchBox').value.trim().toLowerCase();
+  let list = state.accounts;
+
+  if (query) {
+    list = list.filter(a =>
+      a.name.toLowerCase().includes(query) ||
+      (a.server && a.server.toLowerCase().includes(query)) ||
+      a.characters.some(ch => ch.name.toLowerCase().includes(query))
+    );
+  }
+
+  if (state.filterIncomplete) {
+    list = list.filter(a => {
+      return a.characters.some(ch => !isCharDone(a.id, ch.id));
+    });
+  } else if (state.filterDone) {
+    list = list.filter(a =>
+      a.characters.length > 0 && a.characters.every(ch => isCharDone(a.id, ch.id))
+    );
+  }
+
+  const server = document.getElementById('serverFilter').value;
+  if (server) {
+    list = list.filter(a => a.server === server);
+  }
+
+  const sortBy = document.getElementById('sortBy').value;
+  if (sortBy === 'name') {
+    list = list.slice().sort((a, b) =>
+      (a.name || '').localeCompare(b.name || '', 'zh-Hans-CN'));
+  } else if (sortBy === 'done') {
+    list = list.slice().sort((a, b) => accountDoneRatio(a) - accountDoneRatio(b));
+  }
+  // 'order' 保持 accounts 原数组顺序（即添加先后）
+
+  return list;
+}
+
+function accountDoneRatio(a) {
+  const charCount = a.characters.length;
+  if (charCount === 0) return 0;
+  const done = a.characters.filter(ch => isCharDone(a.id, ch.id)).length;
+  return done / charCount;
+}
+
+function updateServerFilterOptions() {
+  const select = document.getElementById('serverFilter');
+  if (!select) return;
+  const current = select.value;
+  const servers = Array.from(new Set(state.accounts.map(a => a.server).filter(Boolean))).sort();
+
+  select.innerHTML = '';
+  const total = state.accounts.length;
+  const optAll = document.createElement('option');
+  optAll.value = '';
+  optAll.textContent = `全部服务器（${total}）`;
+  select.appendChild(optAll);
+  servers.forEach(s => {
+    const count = state.accounts.filter(a => a.server === s).length;
+    const opt = document.createElement('option');
+    opt.value = s;
+    opt.textContent = `${s}（${count}）`;
+    if (s === current) opt.selected = true;
+    select.appendChild(opt);
+  });
+}
+
+// ===== Render =====
+function render() {
+  updateServerFilterOptions();
+  const accounts = getFilteredAccounts();
+  const container = document.getElementById('accountList');
+
+  // Stats
+  let totalChars = 0, doneChars = 0;
+  state.accounts.forEach(a => {
+    a.characters.forEach(ch => {
+      totalChars++;
+      if (isCharDone(a.id, ch.id)) doneChars++;
+    });
+  });
+
+  document.getElementById('statAccounts').textContent = state.accounts.length;
+  document.getElementById('statDone').textContent = doneChars;
+  document.getElementById('statPending').textContent = totalChars - doneChars;
+  document.getElementById('summaryBadge').innerHTML =
+    '今日 <strong>' + doneChars + '/' + totalChars + '</strong>';
+
+  if (accounts.length === 0 && state.accounts.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">&#9876;</div>
+        <h3>暂无账号</h3>
+        <p>点击右上角「添加账号」开始管理你的游戏角色</p>
+        <button class="btn btn-accent" onclick="openAddAccount()">+ 添加第一个账号</button>
+      </div>`;
+    return;
+  }
+
+  if (accounts.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">&#128269;</div>
+        <h3>无匹配结果</h3>
+        <p>尝试修改搜索关键词或关闭筛选</p>
+      </div>`;
+    return;
+  }
+
+  let html = '';
+  accounts.forEach(account => {
+    const expanded = state.expandedAccounts.has(account.id);
+    const charCount = account.characters.length;
+    const doneCount = account.characters.filter(ch => isCharDone(account.id, ch.id)).length;
+    const progress = charCount > 0 ? Math.round(doneCount / charCount * 100) : 0;
+
+    const firstCh = account.characters[0];
+    let firstCharHtml = '';
+    if (firstCh) {
+      const fcDone = isCharDone(account.id, firstCh.id);
+      const fcVip = getVipStatus(firstCh.vipDays);
+      const fcActCls = getActivityClass(firstCh.activity);
+      firstCharHtml =
+        `<div class="first-char">` +
+          `<span>首角色 · <b style="color:var(--text-primary)">${escHtml(firstCh.name || '未命名')}</b></span>` +
+          `<span class="char-activity ${fcActCls}">活跃 ${firstCh.activity || '-'}</span>` +
+          `<span class="vip-badge ${fcVip.cls}">${fcVip.text}</span>` +
+          `<span class="fc-done ${fcDone ? 'checked' : ''}">${fcDone ? '今日 ✓' : '今日 ○'}</span>` +
+        `</div>`;
+    }
+
+    html += `<div class="account-card ${expanded ? 'expanded' : ''}" data-id="${account.id}">`;
+
+    // Header
+    html += `<div class="account-header" onclick="toggleAccount('${account.id}')">`;
+    html += `<div class="account-info">`;
+    html += `<span class="expand-icon">&#9654;</span>`;
+    html += `<span class="account-name">${escHtml(account.name)}</span>`;
+    if (account.server) {
+      html += `<span class="account-server">${escHtml(account.server)}</span>`;
+    }
+    html += firstCharHtml;
+    html += `</div>`;
+    html += `<div class="account-progress">`;
+    html += `<div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>`;
+    html += `<span class="progress-text">${doneCount}/${charCount}</span>`;
+    html += `</div>`;
+    html += `<div class="account-actions">`;
+    html += `<button title="编辑" onclick="event.stopPropagation();openEditAccount('${account.id}')">&#9998;</button>`;
+    html += `<button class="delete-btn" title="删除" onclick="event.stopPropagation();deleteAccount('${account.id}')">&#10005;</button>`;
+    html += `</div>`;
+    html += `</div>`;
+
+    // Body
+    html += `<div class="account-body">`;
+    html += `<table class="char-table">`;
+    html += `<thead><tr><th style="width:26%">角色名</th><th style="width:16%">活跃度</th><th style="width:18%">会员剩余</th><th style="width:14%">日常</th><th style="width:14%">押镖</th></tr></thead>`;
+    html += `<tbody>`;
+
+    account.characters.forEach(ch => {
+      const done = isCharDone(account.id, ch.id);
+      const yabiao = isCharYaBiao(account.id, ch.id);
+      const vip = getVipStatus(ch.vipDays);
+      const actCls = getActivityClass(ch.activity);
+
+      html += `<tr>`;
+      html += `<td><span class="char-name">${escHtml(ch.name || '未命名')}</span></td>`;
+      html += `<td><span class="char-activity ${actCls}">${ch.activity || '-'}</span></td>`;
+      html += `<td><span class="vip-badge ${vip.cls}">${vip.text}</span></td>`;
+      html += `<td><div class="daily-check">`;
+      html += `<button class="check-btn ${done ? 'checked' : ''}" onclick="toggleCharDone('${account.id}','${ch.id}')" title="${done ? '已完成，点击取消' : '标记完成'}">`;
+      html += done ? '&#10003;' : '&#9675;';
+      html += `</button></div></td>`;
+      html += `<td><div class="daily-check">`;
+      html += `<button class="check-btn yabiao-btn ${yabiao ? 'checked yabiao-checked' : ''}" onclick="toggleYaBiao('${account.id}','${ch.id}')" title="${yabiao ? '已押镖，点击取消' : '标记押镖'}">`;
+      html += yabiao ? '&#10003;' : '&#9675;';
+      html += `</button></div></td>`;
+      html += `</tr>`;
+    });
+
+    html += `</tbody></table>`;
+
+    // Batch actions
+    html += `<div class="batch-bar">`;
+    html += `<button class="btn btn-sm" onclick="batchCompleteAll('${account.id}',true)">全部完成</button>`;
+    html += `<button class="btn btn-sm" onclick="batchCompleteAll('${account.id}',false)">全部重置</button>`;
+    html += `</div>`;
+
+    html += `</div>`; // account-body
+    html += `</div>`; // account-card
+  });
+
+  container.innerHTML = html;
+}
+
+function escHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function toggleAccount(accountId) {
+  if (state.expandedAccounts.has(accountId)) {
+    state.expandedAccounts.delete(accountId);
+  } else {
+    state.expandedAccounts.add(accountId);
+  }
+  render();
+}
+
+// ===== Account Modal =====
+let editingChars = [];
+
+function openAddAccount() {
+  state.editingAccountId = null;
+  editingChars = [{ name: '', activity: '0', vipDays: '' }];
+  document.getElementById('accountModalTitle').textContent = '添加账号';
+  document.getElementById('accountSubmitBtn').textContent = '确认添加';
+  document.getElementById('formAccountName').value = '';
+  document.getElementById('formAccountServer').value = '';
+  renderCharForm();
+  openModal('accountModal');
+}
+
+function openEditAccount(accountId) {
+  const account = state.accounts.find(a => a.id === accountId);
+  if (!account) return;
+  state.editingAccountId = accountId;
+  editingChars = account.characters.map(ch => ({ ...ch }));
+  document.getElementById('accountModalTitle').textContent = '编辑账号';
+  document.getElementById('accountSubmitBtn').textContent = '保存修改';
+  document.getElementById('formAccountName').value = account.name;
+  document.getElementById('formAccountServer').value = account.server || '';
+  renderCharForm();
+  openModal('accountModal');
+}
+
+function renderCharForm() {
+  const container = document.getElementById('charFormList');
+  let html = '';
+  editingChars.forEach((ch, i) => {
+    const vipVal = (ch.vipDays !== undefined && ch.vipDays !== null) ? ch.vipDays : '';
+    html += `<div class="char-form-item">`;
+    html += `<div><div class="char-label">角色${i + 1} 名称</div><input type="text" data-field="name" data-idx="${i}" value="${escHtml(ch.name || '')}" placeholder="角色名" /></div>`;
+    html += `<div><div class="char-label">活跃度</div><input type="number" data-field="activity" data-idx="${i}" value="${ch.activity || ''}" placeholder="0" min="0" /></div>`;
+    html += `<div><div class="char-label">会员剩余(天)</div><input type="number" data-field="vipDays" data-idx="${i}" value="${vipVal}" placeholder="天数" min="0" /></div>`;
+    html += `<button type="button" class="char-remove" title="删除该角色" ${i === 0 ? 'disabled' : ''} onclick="removeChar(${i})">×</button>`;
+    html += `</div>`;
+  });
+  container.innerHTML = html;
+  const addBtn = document.getElementById('addCharBtn');
+  if (addBtn) addBtn.disabled = editingChars.length >= 6;
+}
+
+function addChar() {
+  if (editingChars.length >= 6) {
+    showToast('最多 6 个角色');
+    return;
+  }
+  const tpl = editingChars[0] || { activity: '0', vipDays: '' };
+  editingChars.push({
+    name: '',
+    activity: tpl.activity || '0',
+    vipDays: (tpl.vipDays !== undefined ? tpl.vipDays : '')
+  });
+  renderCharForm();
+}
+
+function removeChar(idx) {
+  if (idx === 0 || idx >= editingChars.length) return;
+  editingChars.splice(idx, 1);
+  renderCharForm();
+}
+
+function submitAccount() {
+  const name = document.getElementById('formAccountName').value.trim();
+  if (!name) {
+    showToast('请输入账号名称');
+    return;
+  }
+  const server = document.getElementById('formAccountServer').value.trim();
+
+  const characters = [];
+  const today = todayStr();
+
+  for (let i = 0; i < editingChars.length; i++) {
+    const ch = editingChars[i];
+    const charName = document.querySelector(`[data-field="name"][data-idx="${i}"]`).value.trim();
+    const activity = document.querySelector(`[data-field="activity"][data-idx="${i}"]`).value;
+    const vipDaysVal = document.querySelector(`[data-field="vipDays"][data-idx="${i}"]`).value;
+
+    // 非首角色且留空 -> 跳过该行
+    if (i !== 0 && !charName) continue;
+    // 首角色必填
+    if (i === 0 && !charName) {
+      showToast('第一个角色名称必填');
+      return;
+    }
+
+    const charObj = {
+      id: ch.id || genId(),
+      name: charName,
+      activity: activity || '0'
+    };
+    if (vipDaysVal !== '' && vipDaysVal !== null) {
+      charObj.vipDays = parseInt(vipDaysVal) || 0;
+      // 天数未变则沿用原更新日期，否则刷新为今天
+      if (ch.vipLastUpdated && Number(ch.vipDays) === charObj.vipDays) {
+        charObj.vipLastUpdated = ch.vipLastUpdated;
+      } else {
+        charObj.vipLastUpdated = today;
+      }
+    }
+    characters.push(charObj);
+  }
+
+  if (state.editingAccountId) {
+    const account = state.accounts.find(a => a.id === state.editingAccountId);
+    if (account) {
+      account.name = name;
+      account.server = server;
+      account.characters = characters;
+      // 清理被删除角色的打卡记录（避免数据残留）
+      const keepIds = new Set(characters.map(c => c.id));
+      const prefixDaily = account.id + '_';
+      const prefixYb = 'yb_' + account.id + '_';
+      Object.keys(state.dailyRecords).forEach(date => {
+        Object.keys(state.dailyRecords[date]).forEach(key => {
+          let charId = null;
+          if (key.startsWith(prefixDaily)) charId = key.slice(prefixDaily.length);
+          else if (key.startsWith(prefixYb)) charId = key.slice(prefixYb.length);
+          if (charId && !keepIds.has(charId)) {
+            delete state.dailyRecords[date][key];
+          }
+        });
+      });
+    }
+    showToast('账号已更新');
+  } else {
+    state.accounts.push({
+      id: genId(),
+      name,
+      server,
+      characters
+    });
+    showToast('账号已添加');
+  }
+
+  saveState();
+  closeModal('accountModal');
+  render();
+}
+
+function deleteAccount(accountId) {
+  const account = state.accounts.find(a => a.id === accountId);
+  if (!account) return;
+  if (!confirm('确定删除账号「' + account.name + '」？\n该账号的所有日常记录也会被清除。')) return;
+
+  state.accounts = state.accounts.filter(a => a.id !== accountId);
+  // Clean up daily records for this account
+  Object.keys(state.dailyRecords).forEach(date => {
+    Object.keys(state.dailyRecords[date]).forEach(key => {
+      if (key.startsWith(accountId + '_')) {
+        delete state.dailyRecords[date][key];
+      }
+    });
+  });
+
+  state.expandedAccounts.delete(accountId);
+  saveState();
+  render();
+  showToast('账号已删除');
+}
+
+// ===== Import/Export =====
+function openImportExport() {
+  document.getElementById('ioTextarea').value = '';
+  openModal('ioModal');
+}
+
+function exportData() {
+  const data = JSON.stringify({
+    accounts: state.accounts,
+    dailyRecords: state.dailyRecords,
+    exportDate: new Date().toISOString()
+  }, null, 2);
+  document.getElementById('ioTextarea').value = data;
+
+  // Also trigger download
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'nsh_accounts_' + todayStr() + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('数据已导出');
+}
+
+function importFromTextarea() {
+  const text = document.getElementById('ioTextarea').value.trim();
+  if (!text) {
+    showToast('请粘贴 JSON 数据');
+    return;
+  }
+  doImport(text);
+}
+
+function importFromFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    doImport(e.target.result);
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function doImport(text) {
+  try {
+    const data = JSON.parse(text);
+    if (!data.accounts || !Array.isArray(data.accounts)) {
+      showToast('数据格式错误：缺少 accounts 字段');
+      return;
+    }
+    if (!confirm('导入将覆盖当前所有数据，确定继续？')) return;
+
+    state.accounts = data.accounts;
+    state.dailyRecords = data.dailyRecords || {};
+    state.expandedAccounts.clear();
+    saveState();
+    closeModal('ioModal');
+    render();
+    showToast('数据导入成功，共 ' + state.accounts.length + ' 个账号');
+  } catch (e) {
+    showToast('JSON 解析失败：' + e.message);
+  }
+}
+
+// ===== Modal Helpers =====
+function openModal(id) {
+  document.getElementById(id).classList.add('show');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) {
+      overlay.classList.remove('show');
+    }
+  });
+});
+
+// ===== Toast =====
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ===== Init =====
+function init() {
+  loadState();
+  document.getElementById('datePicker').value = state.currentDate;
+  render();
+}
+
+init();
+</script>
+</body>
+</html>
