@@ -183,6 +183,48 @@
   }
   .音乐名.已选 { color: var(--成功); }
 
+  /* 音源切换：本地上传 / 网络链接 二选一 */
+  .音源切换 {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .音源切换 button {
+    flex: 1;
+    padding: 8px 0;
+    font-size: 14px;
+    border: 1px solid var(--边框);
+    background: #fafcff;
+    color: var(--文字);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .音源切换 button:hover { border-color: var(--主色); color: var(--主色); }
+  .音源切换 button.选中 {
+    background: var(--主色);
+    border-color: var(--主色);
+    color: #fff;
+  }
+
+  /* 网络链接输入区 */
+  .网络区 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .网络区 input[type="url"] {
+    flex: 1;
+    padding: 10px 12px;
+    font-size: 13px;
+    border: 1px solid var(--边框);
+    border-radius: 10px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .网络区 input[type="url"]:focus { border-color: var(--主色); }
+  .音乐名.失败 { color: var(--警示); }
+
   /* 音量 */
   input[type="range"] {
     width: 100%;
@@ -291,10 +333,25 @@
       <!-- 提示音乐 -->
       <div class="字段">
         <label class="字段标签" for="音乐输入">提示音乐</label>
-        <div class="音乐行">
+
+        <!-- 音源切换：本地上传 / 网络链接 -->
+        <div class="音源切换" id="音源切换">
+          <button type="button" data-音源="本地" class="选中">本地上传</button>
+          <button type="button" data-音源="网络">网络链接</button>
+        </div>
+
+        <!-- 本地上传区 -->
+        <div class="音乐行" id="本地区">
           <input id="音乐输入" type="file" accept="audio/*">
           <button id="试听按钮" class="按钮 次按钮">试听</button>
         </div>
+
+        <!-- 网络链接区 -->
+        <div class="网络区" id="网络区" style="display:none;">
+          <input id="网络输入" type="url" placeholder="粘贴音频直链，如 https://xxx.com/xxx.mp3">
+          <button id="加载试听按钮" class="按钮 次按钮">加载试听</button>
+        </div>
+
         <div id="音乐名" class="音乐名">未选择（将使用默认蜂鸣声）</div>
       </div>
 
@@ -318,7 +375,7 @@
       </div>
     </div>
 
-    <div class="页脚">设置会自动保存 · 刷新页面后需重新选择音乐文件</div>
+    <div class="页脚">设置会自动保存 · 网络音乐链接刷新后保留，本地文件需重新选择</div>
   </div>
 
   <!-- 提醒弹窗 -->
@@ -340,7 +397,7 @@
  * 久坐提醒 · 单文件实现
  * 关键点：
  *  1) 基于时间戳计时（记录目标结束时刻），避免后台被节流导致计时漂移
- *  2) 音乐用 <audio> + URL.createObjectURL；未选则用 Web Audio 蜂鸣兜底
+ *  2) 音乐用 <audio>：本地上传走 URL.createObjectURL，网络链接走 http(s) 直链；未选则用 Web Audio 蜂鸣兜底
  *  3) 浏览器自动播放限制：AudioContext 在用户交互后初始化/解锁
  *  4) 间隔、音量持久化到 localStorage；音频文件对象无法持久化
  * ========================================================= */
@@ -355,6 +412,11 @@ const 预设组       = document.getElementById("预设组");
 const 音乐输入     = document.getElementById("音乐输入");
 const 试听按钮     = document.getElementById("试听按钮");
 const 音乐名元素   = document.getElementById("音乐名");
+const 音源切换     = document.getElementById("音源切换");
+const 本地区       = document.getElementById("本地区");
+const 网络区       = document.getElementById("网络区");
+const 网络输入     = document.getElementById("网络输入");
+const 加载试听按钮 = document.getElementById("加载试听按钮");
 const 音量输入     = document.getElementById("音量输入");
 const 音量显示     = document.getElementById("音量显示");
 const 通知按钮     = document.getElementById("通知按钮");
@@ -366,6 +428,7 @@ const 音频元素     = document.getElementById("音频");
 // ---------- 本地存储键名 ----------
 const 键_间隔 = "jiuzu_interval";
 const 键_音量 = "jiuzu_volume";
+const 键_网络音乐 = "jiuzu_music_url";
 
 // ---------- 安全的本地存储读写（隐私模式 / 存储禁用 / 配额满 时会抛错，必须兜底） ----------
 function 读取存储(键) {
@@ -391,7 +454,9 @@ const 状态 = {
   目标结束时刻: 0,        // 时间戳（毫秒）：倒计时归零的时刻
   暂停剩余毫秒: 45 * 60 * 1000, // 暂停时保留的剩余时间
   音乐文件: null,         // 用户选择的 File 对象
-  音乐URL: "",            // createObjectURL 生成的地址
+  音乐URL: "",            // <audio> 当前使用的 src（本地为 blob: 对象地址，网络为 http(s) 直链）
+  音源类型: "本地",       // "本地" | "网络"，当前生效的音源
+  网络地址: "",           // 用户输入并持久化的网络音乐地址
   提醒中: false,          // 是否正处于提醒弹窗
   蜂鸣定时器: null        // Web Audio 蜂鸣循环句柄
 };
@@ -423,6 +488,28 @@ function 初始化() {
   音量显示.textContent = Math.round(状态.音量 * 100) + "%";
   音频元素.volume = 状态.音量;
   高亮预设(状态.间隔分钟);
+
+  // 恢复网络音乐（本地文件无法持久化，故网络链接优先回填）
+  const 存网络 = 读取存储(键_网络音乐);
+  if (存网络) {
+    状态.网络地址 = 存网络;
+    状态.音源类型 = "网络";
+    网络输入.value = 存网络;
+    状态.音乐URL = 存网络;          // 设置 src 但不在初始化时播放（浏览器也会拦截）
+    音频元素.src = 存网络;
+    音频元素.load();
+    本地区.style.display = "none";
+    网络区.style.display = "";
+    音源切换.querySelectorAll("button").forEach(b => {
+      b.classList.toggle("选中", b.dataset.音源 === "网络");
+    });
+    设置音乐名("已设置网络音乐：" + 存网络, true);
+  } else {
+    状态.音源类型 = "本地";
+    本地区.style.display = "";
+    网络区.style.display = "none";
+    设置音乐名("未选择（将使用默认蜂鸣声）", false);
+  }
 
   // 初始显示
   状态.暂停剩余毫秒 = 状态.间隔分钟 * 60 * 1000;
@@ -464,32 +551,38 @@ function 绑定事件() {
     });
   });
 
-  // 选择音乐文件
+  // 选择音乐文件（本地上传）
   音乐输入.addEventListener("change", () => {
-    const 文件 = 音乐输入.files && 音乐输入.files[0];
-    if (状态.音乐URL) {
-      URL.revokeObjectURL(状态.音乐URL); // 释放旧地址
-      状态.音乐URL = "";
-    }
-    if (文件) {
-      状态.音乐文件 = 文件;
-      状态.音乐URL = URL.createObjectURL(文件);
-      音频元素.src = 状态.音乐URL;
-      音频元素.load();
-      音乐名元素.textContent = "已选择：" + 文件.name;
-      音乐名元素.classList.add("已选");
-    } else {
-      状态.音乐文件 = null;
+    应用本地文件(音乐输入.files && 音乐输入.files[0]);
+  });
+
+  // 音源切换：本地上传 / 网络链接
+  音源切换.querySelectorAll("button").forEach(btn => {
+    btn.addEventListener("click", () => 切换音源(btn.dataset.音源));
+  });
+
+  // 网络链接：加载并试听
+  加载试听按钮.addEventListener("click", () => 加载网络音乐(true));
+
+  // 音频加载失败（如网络链接非直链 / 跨域受限 / 已失效）→ 明确提示并回退蜂鸣
+  音频元素.addEventListener("error", () => {
+    if (状态.音源类型 === "网络" && 状态.音乐URL) {
+      设置音乐名("链接无法播放：可能不是音频直链、跨域受限或已失效", false, true);
+      状态.音乐URL = "";                  // 标记不可用，后续提醒走蜂鸣兜底
       音频元素.removeAttribute("src");
-      音乐名元素.textContent = "未选择（将使用默认蜂鸣声）";
-      音乐名元素.classList.remove("已选");
+      // 若正处于提醒弹窗，立即回退到蜂鸣兜底，避免弹窗开着却静默无声
+      // （此时 play() 可能早已 resolve，.catch 不会再次触发，必须在此兜底）
+      if (状态.提醒中) {
+        音频元素.pause();
+        开始蜂鸣循环();
+      }
     }
   });
 
-  // 试听
+  // 试听（本地上传音源）
   试听按钮.addEventListener("click", () => {
     解锁音频();          // 用户手势中解锁 AudioContext
-    if (状态.音乐URL) {
+    if (当前有音乐()) {
       音频元素.loop = false; // 试听不循环，避免与上轮 loop 状态串扰
       音频元素.currentTime = 0;
       音频元素.volume = 状态.音量;
@@ -524,9 +617,9 @@ function 绑定事件() {
     }
   });
 
-  // 页面卸载时释放 ObjectURL，避免内存泄漏
+  // 页面卸载时释放本地上传生成的 ObjectURL，避免内存泄漏（网络地址非对象 URL，绝不 revoke）
   window.addEventListener("beforeunload", () => {
-    if (状态.音乐URL) {
+    if (状态.音乐URL && 状态.音乐URL.indexOf("blob:") === 0) {
       URL.revokeObjectURL(状态.音乐URL);
       状态.音乐URL = "";
     }
@@ -666,7 +759,7 @@ function 关闭提醒() {
 // 播放提醒音：有音乐则循环播放 <audio>，否则用 Web Audio 蜂鸣循环
 function 播放提醒声音() {
   解锁音频();
-  if (状态.音乐URL) {
+  if (当前有音乐()) {
     音频元素.currentTime = 0;
     音频元素.volume = 状态.音量;
     音频元素.loop = true;
@@ -686,6 +779,125 @@ function 停止提醒声音() {
     clearInterval(状态.蜂鸣定时器);
     状态.蜂鸣定时器 = null;
   }
+}
+
+// 当前是否有可用音乐（本地或网络任一音源均可）
+function 当前有音乐() {
+  return !!状态.音乐URL;
+}
+
+// 统一设置音乐状态文案（已选=绿 / 失败=橙 / 否则=灰）
+function 设置音乐名(文本, 已选, 失败) {
+  音乐名元素.textContent = 文本;
+  音乐名元素.classList.toggle("已选", !!已选);
+  音乐名元素.classList.toggle("失败", !!失败);
+}
+
+// 应用本地文件：创建对象 URL 并设置音频源（自带旧对象 URL 释放，绝不误 revoke 网络地址）
+function 应用本地文件(文件) {
+  if (状态.音乐URL && 状态.音乐URL.indexOf("blob:") === 0) {
+    URL.revokeObjectURL(状态.音乐URL); // 仅当确为本地对象 URL 才释放
+  }
+  状态.音乐URL = "";
+  if (文件) {
+    状态.音乐文件 = 文件;
+    状态.音乐URL = URL.createObjectURL(文件);
+    音频元素.src = 状态.音乐URL;
+    音频元素.load();
+    设置音乐名("已选择本地文件：" + 文件.name, true);
+  } else {
+    状态.音乐文件 = null;
+    音频元素.removeAttribute("src");
+    设置音乐名("未选择（将使用默认蜂鸣声）", false);
+  }
+}
+
+// 切换音源：本地上传 <-> 网络链接
+function 切换音源(类型) {
+  if (类型 !== "本地" && 类型 !== "网络") return;
+  if (类型 === 状态.音源类型) return;
+  // 离开旧音源：仅释放本地对象 URL（网络地址非对象 URL，绝不 revoke）
+  if (状态.音乐URL && 状态.音乐URL.indexOf("blob:") === 0) {
+    URL.revokeObjectURL(状态.音乐URL);
+  }
+  状态.音乐URL = "";
+  状态.音乐文件 = null;
+  音频元素.removeAttribute("src");
+
+  状态.音源类型 = 类型;
+  音源切换.querySelectorAll("button").forEach(b => {
+    b.classList.toggle("选中", b.dataset.音源 === 类型);
+  });
+
+  if (类型 === "本地") {
+    本地区.style.display = "";
+    网络区.style.display = "none";
+    // 切回本地时若文件选择框仍有文件，自动复用
+    if (音乐输入.files && 音乐输入.files[0]) {
+      应用本地文件(音乐输入.files[0]);
+    } else {
+      设置音乐名("未选择（将使用默认蜂鸣声）", false);
+    }
+  } else {
+    本地区.style.display = "none";
+    网络区.style.display = "";
+    // 若此前已保存网络地址，自动回填并恢复，无需重新加载
+    if (状态.网络地址) {
+      网络输入.value = 状态.网络地址;
+      状态.音乐URL = 状态.网络地址;
+      音频元素.src = 状态.网络地址;
+      音频元素.load();
+      设置音乐名("已设置网络音乐：" + 状态.网络地址, true);
+    } else {
+      设置音乐名("请输入并加载网络音乐链接", false);
+    }
+  }
+}
+
+// 加载网络音乐：校验 + 持久化 + 试听预览
+function 加载网络音乐(是否试听) {
+  解锁音频();
+  const 原 = (网络输入.value || "").trim();
+  if (!原) {
+    设置音乐名("请先粘贴音频链接", false, true);
+    return;
+  }
+  if (!/^https?:\/\//i.test(原)) {
+    设置音乐名("链接格式不正确：需以 http:// 或 https:// 开头", false, true);
+    return;
+  }
+  const 混合内容 = (location.protocol === "https:" && /^http:\/\//i.test(原));
+  写入存储(键_网络音乐, 原);
+  状态.网络地址 = 原;
+  // 若之前是本地音源，释放其对象 URL
+  if (状态.音乐URL && 状态.音乐URL.indexOf("blob:") === 0) {
+    URL.revokeObjectURL(状态.音乐URL);
+  }
+  状态.音源类型 = "网络";
+  状态.音乐文件 = null;
+  状态.音乐URL = 原;
+  音频元素.src = 原;
+  音频元素.load();
+  if (混合内容) {
+    设置音乐名("已设置网络音乐（警告：https 页面用 http 链接可能被拦截，建议换 https）：" + 原, false, true);
+  } else {
+    设置音乐名("已设置网络音乐：" + 原, true);
+  }
+  if (是否试听) 预览网络音乐();
+}
+
+// 预览网络音乐：不循环，3 秒后自动停止；加载/播放失败则回退蜂鸣，不静默失败
+function 预览网络音乐() {
+  音频元素.loop = false;
+  音频元素.currentTime = 0;
+  音频元素.volume = 状态.音量;
+  音频元素.play().catch(() => {
+    设置音乐名("链接无法播放：可能不是音频直链、跨域受限或已失效", false, true);
+    状态.音乐URL = "";                 // 标记不可用，后续提醒走蜂鸣兜底
+    音频元素.removeAttribute("src");
+    播放蜂鸣();                         // 用蜂鸣给出反馈
+  });
+  setTimeout(() => { if (!状态.提醒中) 音频元素.pause(); }, 3000);
 }
 
 // ---- Web Audio 兜底蜂鸣 ----
