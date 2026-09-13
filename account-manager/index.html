@@ -63,6 +63,35 @@
       gap: 16px;
     }
 
+    /* 返回门户首页按钮：与 .date-nav button 风格协调的深色小按钮 */
+    .back-home {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 32px;
+      padding: 0 12px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-family: var(--font-cn);
+      text-decoration: none;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+
+    .back-home:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* 键盘 Tab 聚焦时的金色焦点环（只写 :focus-visible，不移除默认焦点环） */
+    .back-home:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
     .logo {
       font-size: 20px;
       font-weight: 700;
@@ -780,6 +809,9 @@
 <!-- Header -->
 <header class="header">
   <div class="header-left">
+    <!-- 返回门户首页：用相对路径 ../ 指向 /game-account-manager/
+         （项目页下写成根路径 / 会跳到域名根导致 404，务必保持相对路径） -->
+    <a class="back-home" href="../" title="返回首页"><span aria-hidden="true">&#8592;</span> 返回首页</a>
     <div class="logo">游戏<span>账号管理器</span></div>
   </div>
   <div class="header-center">
