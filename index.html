@@ -3,19 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="清欢小筑 · 自制小工具站：久坐提醒与游戏账号管理器，数据只存于本机浏览器。">
+<meta name="description" content="清欢小筑 · 自制小工具站：久坐提醒、游戏账号管理器，数据只存于本机浏览器。">
 <title>清欢小筑 · 静坐有时 · 起身有度</title>
 <!-- 站点图标：内联 data-URI（零外链、保持单文件），免去浏览器请求 /favicon.ico 造成的 404 -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23A63A2B'/%3E%3Cpath d='M16 8l8 8-8 8-8-8z' fill='%23FBF3E2'/%3E%3C/svg%3E">
 <!--
   ============================================================================
-  清欢小筑 · 工具站主页（正式版）
+  清欢小筑 · 工具站主页（门户版）
   视觉还原自设计稿「主页设计稿.html」（设计：颜如画）
   单文件 · 零外部依赖（无外链字体/图片/CDN，纹理皆内联 SVG + CSS 渐变）
   ---------------------------------------------------------------------------
-  说明：设计稿末尾的「设计标注区 / 状态样张 / 弹窗预览」为评审说明，正式版已删除；
-        提醒弹窗（#提醒弹窗）已从静态预览改为真正的全屏遮罩，由脚本控制显隐。
-  久坐提醒逻辑与独立页 jiuzu-tixing/index.html 完全等价（共享 localStorage 键名）。
+  版式说明：主页只做「入口门户」，每个工具一张入口卡（印章 + 标题 + 打开），
+            工具本体各自放在独立子目录中：
+              ./jiuzu-reminder/   —— 久坐提醒（设置与计时都在该页）
+              ./account-manager/  —— 游戏账号管理器
+  ⚠ 部署铁律：GitHub Pages 是「项目页」（域名的子路径），所有链接必须用相对路径
+             （如 ./jiuzu-reminder/），写成根路径（/jiuzu-reminder/）线上必定 404。
   ============================================================================
 -->
 <style>
@@ -133,9 +136,11 @@ body::after{
   background:linear-gradient(90deg,transparent,var(--金),transparent);}
 .金线 i{width:7px;height:7px;background:var(--金);transform:rotate(45deg);opacity:.85;}
 
-/* —— 双栏 —— */
-.两栏{display:grid;grid-template-columns:minmax(0,1.85fr) minmax(288px,1fr);gap:26px;align-items:start;}
-.主栏,.侧栏{min-width:0;display:flex;flex-direction:column;gap:22px;}
+/* —— 金线小标题（「工具」「贴士」这类栏目名）—— */
+.栏名{
+  flex:none;font-family:var(--衬线);font-size:14px;letter-spacing:.4em;
+  color:var(--金-深);text-indent:.4em;
+}
 
 /* ==========================================================================
    3. 卡片
@@ -159,42 +164,9 @@ body::after{
 .卡题::before{content:"";display:inline-block;width:8px;height:8px;margin-right:10px;
   background:linear-gradient(180deg,var(--朱砂-亮),var(--朱砂-深));transform:rotate(45deg) translateY(-1px);}
 .卡注{font-size:12.5px;color:var(--墨-淡);letter-spacing:.14em;}
-.侧题{
-  writing-mode:vertical-rl;font-family:var(--衬线);font-size:13px;letter-spacing:.34em;
-  color:var(--金-深);opacity:.8;user-select:none;
-}
 
 /* ==========================================================================
-   4. 大字号倒计时（视觉主角）
-   ========================================================================== */
-.倒计时区{position:relative;display:grid;place-items:center;margin:22px 0 8px;padding:14px 0 6px;min-height:clamp(300px,62vw,332px);}
-.表盘{position:absolute;width:clamp(248px,60vw,304px);height:clamp(248px,60vw,304px);}
-.盘外{fill:none;stroke:var(--线金);stroke-width:1;}
-.盘刻度{fill:none;stroke:var(--金);stroke-width:5;stroke-dasharray:2.4 54.4;opacity:.55;}
-.盘内{fill:none;stroke:var(--线金-淡);stroke-width:1;stroke-dasharray:1 6;}
-.盘弧{fill:none;stroke:url(#弧渐变);stroke-width:3;stroke-linecap:round;
-  stroke-dasharray:150 530;transform:rotate(-90deg);transform-origin:130px 130px;}
-.读数{position:relative;z-index:1;text-align:center;}
-.倒计时{
-  font-family:var(--衬线);font-weight:600;
-  font-size:clamp(62px,15vw,116px);line-height:1.02;letter-spacing:.03em;
-  color:var(--墨);
-  font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"lnum" 1;
-  text-shadow:0 2px 0 rgba(255,255,255,.65), 0 14px 30px rgba(80,62,38,.14);
-}
-.倒计时.运行中{color:var(--朱砂-深);}
-.倒计时.已暂停{color:var(--墨);}
-.状态行{display:inline-flex;align-items:center;gap:9px;margin-top:14px;
-  padding:5px 16px;border:1px solid var(--线金-淡);border-radius:999px;background:rgba(252,248,239,.7);}
-.状态点{width:9px;height:9px;border-radius:50%;background:var(--墨-淡);box-shadow:0 0 0 3px rgba(154,143,126,.16);transition:.2s;}
-.状态行.未开始 .状态点{background:var(--墨-淡);}
-.状态行.计时中 .状态点,.状态行.运行中 .状态点{background:var(--朱砂);box-shadow:0 0 0 3px rgba(166,58,43,.18);animation:呼吸 1.9s ease-in-out infinite;}
-.状态行.已暂停 .状态点{background:var(--金);box-shadow:0 0 0 3px rgba(176,141,87,.20);}
-.状态文案{font-size:14px;letter-spacing:.22em;color:var(--墨-次);}
-@keyframes 呼吸{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.45;transform:scale(.78);}}
-
-/* ==========================================================================
-   5. 按钮体系
+   4. 按钮（门户页只用「主按钮」一种）
    ========================================================================== */
 .按钮{
   appearance:none;cursor:pointer;font-family:var(--衬线);
@@ -214,162 +186,44 @@ body::after{
   box-shadow:inset 0 1px 0 rgba(255,255,255,.28), 0 10px 20px -10px rgba(150,50,30,.8);
 }
 .按钮.主按钮:hover{background:linear-gradient(180deg,#CB5236,var(--朱砂));}
-/* 金：继续态 */
-.按钮.金按钮{
-  color:#3A2E18;border-color:var(--金-深);
-  background:linear-gradient(180deg,#CFB277,#AB8A4C);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.45), 0 8px 18px -10px rgba(120,95,45,.7);
-}
-/* 次：宣纸描边 */
-.按钮.次按钮{color:var(--墨-次);background:linear-gradient(180deg,var(--纸-浅),var(--纸-沉));}
-.按钮.次按钮:hover{border-color:var(--金);color:var(--檀);}
-/* 禁用 */
-.按钮:disabled,.按钮[disabled]{cursor:not-allowed;opacity:.62;filter:grayscale(.15);}
-.按钮.已开启{color:var(--竹);border-color:rgba(62,107,82,.5);background:linear-gradient(180deg,#F3F7F0,#EAF1E7);}
-.按钮.已拒绝{color:var(--赭);border-color:rgba(181,96,31,.45);background:linear-gradient(180deg,#FCF3E9,#F7E9DA);}
-
-.控制组{display:grid;grid-template-columns:1.7fr 1fr;gap:14px;margin-top:22px;}
-.控制组 .按钮{width:100%;padding:16px 20px;font-size:17px;letter-spacing:.24em;}
 
 /* ==========================================================================
-   6. 表单字段
+   5. 工具入口卡（门户主角：印章 + 标题 + 打开）
    ========================================================================== */
-.字段{margin-top:24px;}
-.字段 + .字段{border-top:1px dashed var(--线金-淡);}
-.字段标签{display:block;font-size:14.5px;color:var(--墨);letter-spacing:.1em;margin-bottom:12px;}
-.字段标签 .附注{color:var(--墨-淡);font-size:12.5px;letter-spacing:.06em;margin-left:8px;}
-
-/* 数字/文本/URL 输入 */
-input[type="number"],input[type="url"],input[type="text"]{
-  width:100%;padding:13px 15px;font-size:15px;
-  font-family:var(--黑体);color:var(--墨);
-  background:linear-gradient(180deg,#FBF7EE,#F6EFE0);
-  border:1px solid var(--线金);border-radius:var(--圆角-小);
-  box-shadow:inset 0 1px 3px rgba(80,62,38,.09);
-  outline:none;transition:border-color .18s, box-shadow .18s;
+.工具区{
+  display:grid;
+  /* min() 兜底：视口窄于卡片最小宽（如 320px 老机型）时不再撑破容器 */
+  grid-template-columns:repeat(auto-fit,minmax(min(272px,100%),1fr));
+  gap:24px;
 }
-input::placeholder{color:var(--墨-淡);}
-input[type="number"]:focus,input[type="url"]:focus,input[type="text"]:focus{
-  border-color:var(--朱砂);box-shadow:inset 0 1px 3px rgba(80,62,38,.09), 0 0 0 3px rgba(166,58,43,.16);
-}
-input[type="number"]{font-family:var(--衬线);font-size:19px;letter-spacing:.08em;font-variant-numeric:tabular-nums;max-width:180px;}
-
-/* 预设按钮组 */
-.预设组{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px;}
-.预设组 button{
-  appearance:none;cursor:pointer;padding:11px 0;font-family:var(--衬线);font-size:15px;letter-spacing:.06em;
-  color:var(--墨-次);border:1px solid var(--线金);border-radius:var(--圆角-小);
-  background:linear-gradient(180deg,var(--纸-浅),var(--纸-沉));transition:.16s;
-}
-.预设组 button:hover{border-color:var(--金);color:var(--檀);}
-.预设组 button.选中{
-  color:#FBF3E2;border-color:#7E2718;
-  background:linear-gradient(180deg,var(--朱砂-亮),var(--朱砂-深));
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.25), 0 8px 16px -9px rgba(150,50,30,.75);
-}
-
-/* 音源切换（分段控件） */
-.音源切换{display:inline-flex;gap:4px;padding:4px;margin-bottom:14px;
-  background:var(--纸-沉);border:1px solid var(--线金);border-radius:5px;}
-.音源切换 button{
-  appearance:none;cursor:pointer;border:0;background:transparent;
-  padding:9px 22px;font-family:var(--衬线);font-size:14.5px;letter-spacing:.1em;color:var(--墨-次);
-  border-radius:3px;transition:.16s;
-}
-.音源切换 button:hover{color:var(--檀);}
-.音源切换 button.选中{
-  color:var(--朱砂-深);background:linear-gradient(180deg,var(--纸-浅),var(--纸-深));
-  box-shadow:0 1px 3px rgba(80,62,38,.22), inset 0 0 0 1px var(--线金);
-}
-
-/* 音乐行：真实 file input（视觉隐藏，保留功能与焦点）+ label 充当「选择音乐」按钮 */
-.音乐行{display:flex;align-items:center;gap:12px;}
-.隐藏文件{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;}
-.选曲按钮{display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:none;}
-.隐藏文件:focus-visible + .选曲按钮{outline:2px solid var(--朱砂);outline-offset:3px;}
-.选曲按钮:hover{border-color:var(--金);color:var(--檀);}
-.网络区{display:flex;align-items:center;gap:12px;}
-.网络区 input[type="url"]{flex:1;min-width:0;font-size:13.5px;}
-.网络区 .按钮{flex:none;white-space:nowrap;padding:12px 18px;font-size:14.5px;}
-
-/* 音乐状态文案（三态：常态 / 已选·竹青 / 失败·赭橙）*/
-.音乐名{
-  margin-top:12px;padding:10px 14px;font-size:13.5px;line-height:1.6;
-  color:var(--墨-次);background:rgba(252,248,239,.6);
-  border-left:3px solid var(--墨-淡);border-radius:0 var(--圆角-小) var(--圆角-小) 0;
-  word-break:break-all;
-}
-.音乐名::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;
-  background:currentColor;margin-right:9px;vertical-align:middle;opacity:.9;}
-.音乐名.已选{color:var(--竹);border-left-color:var(--竹);background:linear-gradient(90deg,rgba(62,107,82,.10),rgba(62,107,82,.02));}
-.音乐名.失败{color:var(--赭);border-left-color:var(--赭);background:linear-gradient(90deg,rgba(181,96,31,.12),rgba(181,96,31,.02));}
-.音源提示{margin-top:10px;font-size:12.5px;color:var(--墨-淡);letter-spacing:.04em;}
-
-/* 试听公共行 */
-.试听行{margin-top:12px;}
-
-/* 音量 */
-.音量头{display:flex;align-items:baseline;justify-content:space-between;}
-.音量显示{font-family:var(--衬线);font-size:19px;color:var(--朱砂-深);letter-spacing:.06em;font-variant-numeric:tabular-nums;}
-input[type="range"]{
-  width:100%;margin:16px 0 6px;appearance:none;background:transparent;cursor:pointer;
-}
-input[type="range"]::-webkit-slider-runnable-track{
-  height:8px;border-radius:99px;border:1px solid var(--线金);
-  background:linear-gradient(180deg,#EFE6D3,#F7F1E4);
-  box-shadow:inset 0 1px 2px rgba(80,62,38,.16);
-}
-input[type="range"]::-moz-range-track{
-  height:8px;border-radius:99px;border:1px solid var(--线金);
-  background:linear-gradient(180deg,#EFE6D3,#F7F1E4);
-}
-input[type="range"]::-webkit-slider-thumb{
-  appearance:none;margin-top:-8px;width:24px;height:24px;border-radius:50%;
-  background:radial-gradient(circle at 34% 30%,#C0492F,#8F2E1E 72%);
-  border:2px solid #F5EFE2;
-  box-shadow:0 0 0 1px var(--朱砂-深), 0 4px 10px -2px rgba(140,45,30,.75);
-  transition:transform .12s ease;
-}
-input[type="range"]:hover::-webkit-slider-thumb{transform:scale(1.08);}
-input[type="range"]::-moz-range-thumb{
-  width:22px;height:22px;border-radius:50%;
-  background:radial-gradient(circle at 34% 30%,#C0492F,#8F2E1E 72%);
-  border:2px solid #F5EFE2;
-  box-shadow:0 0 0 1px var(--朱砂-深), 0 4px 10px -2px rgba(140,45,30,.75);
-}
-.音量刻度{display:flex;justify-content:space-between;font-size:12px;color:var(--墨-淡);letter-spacing:.06em;}
-
-/* 通知行 */
-.通知行{display:flex;align-items:center;justify-content:space-between;gap:16px;}
-.通知名{font-size:14.5px;color:var(--墨);letter-spacing:.1em;}
-.通知状态{display:inline-flex;align-items:center;gap:8px;margin-top:6px;font-size:13px;color:var(--墨-次);}
-.状态符{width:8px;height:8px;border-radius:50%;background:var(--墨-淡);}
-.通知状态.已开启{color:var(--竹);} .通知状态.已开启 .状态符{background:var(--竹);}
-.通知状态.已拒绝{color:var(--赭);} .通知状态.已拒绝 .状态符{background:var(--赭);}
-.通知行 .按钮{flex:none;white-space:nowrap;}
-
-/* ==========================================================================
-   7. 侧栏 · 工具入口卡 & 小贴士
-   ========================================================================== */
 .工具卡{
+  text-align:center;
+  padding:38px 28px 34px;
   background:linear-gradient(180deg,#F6EDDD,#EFE2CD);
   border-color:rgba(176,141,87,.55);
+  transition:transform .18s ease, box-shadow .24s ease;
 }
-.工具卡 .印章{width:52px;height:52px;font-size:21px;margin-bottom:16px;}
-.工具名{margin:0 0 10px;font-family:var(--衬线);font-size:21px;letter-spacing:.14em;color:var(--墨);}
-.工具述{margin:0 0 20px;font-size:13.5px;line-height:1.9;color:var(--墨-次);}
-.工具卡 .按钮{display:block;width:100%;text-align:center;text-decoration:none;
-  padding:15px 20px;letter-spacing:.3em;}
-
-.贴士卡{background:linear-gradient(180deg,var(--纸-浅),var(--纸-深));}
-.贴士{list-style:none;margin:6px 0 0;padding:0;}
-.贴士 li{position:relative;padding:9px 0 9px 22px;font-size:13.5px;color:var(--墨-次);line-height:1.75;}
-.贴士 li::before{content:"";position:absolute;left:3px;top:16px;width:7px;height:7px;
-  background:var(--金);transform:rotate(45deg);opacity:.8;}
-.贴士 li + li{border-top:1px dashed var(--线金-淡);}
+.工具卡:hover{transform:translateY(-3px);box-shadow:var(--影卡),0 22px 40px -20px rgba(80,62,38,.5);}
+.工具卡 .印章{width:58px;height:58px;font-size:23px;margin:0 auto 20px;}
+.工具名{
+  margin:0 0 26px;font-family:var(--衬线);font-weight:600;
+  font-size:23px;letter-spacing:.2em;text-indent:.2em;color:var(--墨);
+}
+.工具卡 .按钮{display:inline-block;padding:14px 44px;letter-spacing:.3em;text-indent:.3em;text-decoration:none;}
 
 /* ==========================================================================
-   8. 页脚
+   6. 小贴士
+   ========================================================================== */
+.贴士卡{background:linear-gradient(180deg,var(--纸-浅),var(--纸-深));}
+.贴士{list-style:none;margin:14px 0 0;padding:0;
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(min(288px,100%),1fr));
+  column-gap:34px;}
+.贴士 li{position:relative;padding:10px 0 10px 22px;font-size:13.5px;color:var(--墨-次);line-height:1.75;}
+.贴士 li::before{content:"";position:absolute;left:3px;top:17px;width:7px;height:7px;
+  background:var(--金);transform:rotate(45deg);opacity:.8;}
+
+/* ==========================================================================
+   7. 页脚
    ========================================================================== */
 .页脚{margin-top:38px;text-align:center;}
 .页脚 .金线{margin:0 0 16px;}
@@ -377,41 +231,8 @@ input[type="range"]::-moz-range-thumb{
 .页脚文 b{font-weight:600;color:var(--墨-次);}
 
 /* ==========================================================================
-   9. 提醒弹窗（#提醒弹窗 = 全屏遮罩层，默认隐藏，加 .显示 弹出）
+   8. 响应式（桌面多列；手机竖屏单列堆叠）
    ========================================================================== */
-#提醒弹窗{
-  position:fixed;inset:0;z-index:200;
-  display:none;align-items:center;justify-content:center;padding:26px;
-  background:rgba(38,30,22,.55);backdrop-filter:blur(3px);
-}
-#提醒弹窗.显示{display:flex;}
-.弹窗体{
-  position:relative;width:min(400px,100%);text-align:center;
-  padding:44px 34px 34px;
-  background:linear-gradient(180deg,var(--纸-浅),var(--纸-深));
-  border:1px solid var(--线金);border-radius:var(--圆角);
-  box-shadow:0 36px 80px -24px rgba(30,20,10,.7), inset 0 0 0 1px rgba(255,255,255,.6);
-  outline:1px solid var(--线金-淡);outline-offset:-8px;
-  animation:弹入 .26s cubic-bezier(.2,.8,.3,1.1);
-}
-@keyframes 弹入{from{transform:scale(.92) translateY(8px);opacity:0;}to{transform:none;opacity:1;}}
-.弹窗章{width:70px;height:70px;margin:0 auto 20px;border-radius:10px;transform:rotate(-3deg);
-  display:grid;place-items:center;font-family:var(--衬线);font-size:36px;color:#FBF3E2;
-  background:linear-gradient(158deg,#B8462F,#8F2E1E);
-  box-shadow:inset 0 0 0 3px rgba(251,243,226,.6), inset 0 0 0 5px rgba(251,243,226,.18),
-             0 12px 24px -8px rgba(140,45,30,.55);
-}
-.弹窗题{margin:0 0 12px;font-family:var(--衬线);font-size:29px;letter-spacing:.16em;color:var(--墨);}
-.弹窗述{margin:0 0 26px;font-size:14px;line-height:2;color:var(--墨-次);letter-spacing:.04em;}
-.弹窗体 .按钮{width:100%;padding:15px;letter-spacing:.3em;}
-
-/* ==========================================================================
-   10. 响应式（桌面两栏；手机竖屏单栏堆叠）
-   ========================================================================== */
-@media (max-width:900px){
-  .两栏{grid-template-columns:1fr;}
-  .侧栏{order:2;}
-}
 @media (max-width:640px){
   .页面{padding:38px 16px 30px;}
   .匾额{flex-direction:column;gap:14px;padding:20px 26px;text-align:center;}
@@ -420,20 +241,9 @@ input[type="range"]::-moz-range-thumb{
   .站名{letter-spacing:.18em;}
   .副标题{letter-spacing:.1em;font-size:13px;}
   .卡片{padding:22px 18px;}
+  .工具卡{padding:30px 20px 26px;}
+  .工具名{font-size:21px;margin-bottom:22px;}
   .卡头{flex-direction:column;gap:4px;}
-  .侧题{display:none;}
-  .控制组{grid-template-columns:1fr;}
-  .预设组{grid-template-columns:repeat(4,1fr);gap:8px;}
-  .预设组 button{font-size:14px;}
-  input[type="number"]{max-width:100%;}
-  .音乐行{flex-direction:column;align-items:stretch;}
-  .选曲按钮{width:100%;}
-  .网络区{flex-direction:column;align-items:stretch;}
-  .网络区 .按钮{width:100%;}
-  .通知行{flex-direction:column;align-items:stretch;gap:12px;}
-  .通知行 .按钮{width:100%;}
-  .弹窗体{padding:34px 22px 26px;}
-  .弹窗题{font-size:24px;}
 }
 @media (prefers-reduced-motion:reduce){
   *{animation:none !important;transition:none !important;}
@@ -441,16 +251,6 @@ input[type="range"]::-moz-range-thumb{
 </style>
 </head>
 <body>
-
-<!-- 表盘渐变定义（内联，零外链） -->
-<svg width="0" height="0" aria-hidden="true" style="position:absolute">
-  <defs>
-    <linearGradient id="弧渐变" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#C0492F"/>
-      <stop offset="1" stop-color="#B08D57"/>
-    </linearGradient>
-  </defs>
-</svg>
 
 <div class="页面">
 
@@ -465,145 +265,42 @@ input[type="range"]::-moz-range-thumb{
     </div>
   </header>
 
-  <div class="金线" aria-hidden="true"><i></i></div>
+  <div class="金线" aria-hidden="true"><i></i><span class="栏名">工 具</span><i></i></div>
 
-  <!-- ============ 主内容 · 双栏 ============ -->
-  <main class="两栏">
+  <!-- ============ 工具入口 ============ -->
+  <main class="工具区">
 
-    <!-- ---------- 主栏：久坐提醒 ---------- -->
-    <div class="主栏">
+    <!-- 久坐提醒（入口） -->
+    <section class="卡片 工具卡">
+      <div class="印章" aria-hidden="true"><span>久</span><span>坐</span></div>
+      <h2 class="工具名">久坐提醒</h2>
+      <a class="按钮 主按钮" href="./jiuzu-reminder/">打 开</a>
+    </section>
 
-      <!-- 倒计时 + 控制 -->
-      <section class="卡片">
-        <div class="卡头">
-          <h2 class="卡题">久坐提醒</h2>
-          <span class="侧题">起身有时</span>
-        </div>
-
-        <div class="倒计时区">
-          <svg class="表盘" viewBox="0 0 260 260" aria-hidden="true">
-            <circle class="盘外" cx="130" cy="130" r="122"/>
-            <circle class="盘刻度" cx="130" cy="130" r="108"/>
-            <circle class="盘弧" cx="130" cy="130" r="108"/>
-            <circle class="盘内" cx="130" cy="130" r="95"/>
-          </svg>
-          <div class="读数">
-            <div id="倒计时" class="倒计时" role="timer" aria-live="off">45:00</div>
-            <div class="状态行 未开始" id="状态行">
-              <span class="状态点" aria-hidden="true"></span>
-              <span class="状态文案" id="状态文案">未开始</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="控制组">
-          <button id="开始暂停按钮" class="按钮 主按钮">开始</button>
-          <button id="重置按钮" class="按钮 次按钮">重置</button>
-        </div>
-      </section>
-
-      <!-- 提醒设置 -->
-      <section class="卡片">
-        <div class="卡头">
-          <h2 class="卡题">提醒设置</h2>
-          <span class="卡注">自动保存于本机</span>
-        </div>
-
-        <!-- 提醒间隔 -->
-        <div class="字段">
-          <label class="字段标签" for="间隔输入">提醒间隔
-            <span class="附注">分钟 · 可填 1–180</span>
-          </label>
-          <input id="间隔输入" type="number" min="1" max="180" step="1" value="45">
-          <div class="预设组" id="预设组">
-            <button type="button" data-分钟="30">30</button>
-            <button type="button" data-分钟="45" class="选中">45</button>
-            <button type="button" data-分钟="60">60</button>
-            <button type="button" data-分钟="90">90</button>
-          </div>
-        </div>
-
-        <!-- 提示音乐 -->
-        <div class="字段">
-          <span class="字段标签" id="音乐字段标签">提示音乐</span>
-
-          <div class="音源切换" id="音源切换" role="group" aria-label="音源切换">
-            <button type="button" data-音源="本地" class="选中">本地上传</button>
-            <button type="button" data-音源="网络">网络链接</button>
-          </div>
-
-          <!-- 本地音源区（默认显示） -->
-          <div id="本地音源区">
-            <div class="音乐行">
-              <input id="音乐输入" class="隐藏文件" type="file" accept="audio/*" aria-label="选择本地音乐文件">
-              <label class="按钮 次按钮 选曲按钮" for="音乐输入">选择音乐</label>
-            </div>
-          </div>
-
-          <!-- 网络音源区（默认隐藏，由 JS 切换 display） -->
-          <div class="网络区" id="网络区" style="display:none;">
-            <input id="网络输入" type="url" placeholder="粘贴音频直链，如 https://xxx.com/xxx.mp3" aria-label="网络音乐直链">
-            <button id="加载试听按钮" class="按钮 次按钮">加载试听</button>
-          </div>
-
-          <!-- 公共试听 -->
-          <div class="试听行">
-            <button id="试听按钮" class="按钮 次按钮" style="width:100%">试听提示音</button>
-          </div>
-
-          <div id="音乐名" class="音乐名" role="status">未选择（将使用默认提示音）</div>
-          <p class="音源提示">切换到「网络链接」可粘贴音频直链并加载试听。</p>
-        </div>
-
-        <!-- 音量 -->
-        <div class="字段">
-          <div class="音量头">
-            <label class="字段标签" for="音量输入" style="margin-bottom:0">音量</label>
-            <span class="音量显示" id="音量显示">70%</span>
-          </div>
-          <input id="音量输入" type="range" min="0" max="100" value="70" aria-label="音量">
-          <div class="音量刻度" aria-hidden="true"><span>轻</span><span>中</span><span>响</span></div>
-        </div>
-
-        <!-- 桌面通知 -->
-        <div class="字段">
-          <div class="通知行">
-            <div>
-              <div class="通知名">桌面通知</div>
-              <span class="通知状态" id="通知状态"><span class="状态符" aria-hidden="true"></span>未开启</span>
-            </div>
-            <button id="通知按钮" class="按钮 次按钮">开启通知</button>
-          </div>
-        </div>
-      </section>
-
-    </div>
-
-    <!-- ---------- 侧栏 ---------- -->
-    <aside class="侧栏">
-
-      <!-- 工具入口卡 -->
-      <section class="卡片 工具卡">
-        <div class="印章" aria-hidden="true"><span>账</span><span>号</span></div>
-        <h2 class="工具名">游戏账号管理器</h2>
-        <p class="工具述">集中登记游戏账号、区服与备注，换设备也能翻得到，账号不再东一个西一个。</p>
-        <a class="按钮 主按钮" href="./account-manager/">打 开</a>
-      </section>
-
-      <!-- 小贴士 -->
-      <section class="卡片 贴士卡">
-        <h2 class="卡题" style="font-size:17px">小筑贴士</h2>
-        <ul class="贴士">
-          <li>提醒间隔与音量会自动记住，下次打开无需重设。</li>
-          <li>本地上传的音乐刷新后需重新选择；网络直链可保留。</li>
-          <li>网络音乐需为 https 音频直链，否则可能被浏览器拦截。</li>
-          <li>切到后台的标签页可能延迟提醒，切回时会自动校正。</li>
-        </ul>
-      </section>
-
-    </aside>
+    <!-- 游戏账号管理器（入口） -->
+    <section class="卡片 工具卡">
+      <div class="印章" aria-hidden="true"><span>账</span><span>号</span></div>
+      <h2 class="工具名">游戏账号管理器</h2>
+      <a class="按钮 主按钮" href="./account-manager/">打 开</a>
+    </section>
 
   </main>
+
+  <div class="金线" aria-hidden="true"><i></i><span class="栏名">贴 士</span><i></i></div>
+
+  <!-- ============ 小贴士 ============ -->
+  <section class="卡片 贴士卡">
+    <div class="卡头">
+      <h2 class="卡题" style="font-size:17px">小筑贴士</h2>
+      <span class="卡注">数据只存本机</span>
+    </div>
+    <ul class="贴士">
+      <li>两个工具的数据都只保存在本机浏览器，不会上传到任何服务器。</li>
+      <li>久坐提醒的间隔与音量会自动记住，下次进入无需重设。</li>
+      <li>本地上传的音乐刷新后需重新选择；网络直链可保留。</li>
+      <li>网络音乐需为 https 音频直链，否则可能被浏览器拦截。</li>
+    </ul>
+  </section>
 
   <!-- ============ 页脚 ============ -->
   <footer class="页脚">
@@ -616,656 +313,5 @@ input[type="range"]::-moz-range-thumb{
 
 </div>
 
-<!-- 提醒弹窗（全屏遮罩，默认隐藏，由脚本加 .显示 弹出） -->
-<div id="提醒弹窗" role="dialog" aria-modal="true" aria-labelledby="弹窗题" aria-describedby="弹窗述">
-  <div class="弹窗体">
-    <div class="弹窗章" aria-hidden="true">起</div>
-    <h3 class="弹窗题" id="弹窗题">该起身活动了！</h3>
-    <p class="弹窗述" id="弹窗述">您已静坐了一段时间，起来走走、伸伸腰、喝口水吧。</p>
-    <button id="我知道了按钮" class="按钮 主按钮">我 知 道 了</button>
-  </div>
-</div>
-
-<!-- 隐藏的音频播放器（本地上传 / 网络直链共用；无音乐时回退 Web Audio 蜂鸣） -->
-<audio id="音频" loop preload="auto"></audio>
-
-<script>
-"use strict";
-/* =========================================================
- * 清欢小筑 · 久坐提醒（内联于主页）
- * 逻辑与独立页 jiuzu-tixing/index.html 完全等价，仅按新设计稿调整 id 与状态类名。
- * 关键点：
- *  1) 基于时间戳计时（记录目标结束时刻），避免后台被节流导致计时漂移
- *  2) 音乐用 <audio>：本地上传走 URL.createObjectURL，网络链接走 http(s) 直链；
- *     未选音乐或网络音乐失败时，用 Web Audio 蜂鸣兜底
- *  3) 浏览器自动播放限制：AudioContext 必须在用户手势中初始化/解锁
- *  4) 间隔、音量、网络音乐地址持久化到 localStorage（与独立页共享键名）；
- *     本地文件对象无法持久化
- * ========================================================= */
-
-// ---------- DOM 引用（id 与设计稿契约一致）----------
-const 倒计时元素   = document.getElementById("倒计时");
-const 状态行元素   = document.getElementById("状态行");
-const 状态文案元素 = document.getElementById("状态文案");
-const 开始暂停按钮 = document.getElementById("开始暂停按钮");
-const 重置按钮     = document.getElementById("重置按钮");
-const 间隔输入     = document.getElementById("间隔输入");
-const 预设组       = document.getElementById("预设组");
-const 音乐输入     = document.getElementById("音乐输入");
-const 试听按钮     = document.getElementById("试听按钮");
-const 音乐名元素   = document.getElementById("音乐名");
-const 音源切换     = document.getElementById("音源切换");
-const 本地音源区   = document.getElementById("本地音源区");
-const 网络区       = document.getElementById("网络区");
-const 网络输入     = document.getElementById("网络输入");
-const 加载试听按钮 = document.getElementById("加载试听按钮");
-const 音量输入     = document.getElementById("音量输入");
-const 音量显示     = document.getElementById("音量显示");
-const 通知按钮     = document.getElementById("通知按钮");
-const 通知状态     = document.getElementById("通知状态");
-const 提醒弹窗     = document.getElementById("提醒弹窗");
-const 我知道了按钮 = document.getElementById("我知道了按钮");
-const 音频元素     = document.getElementById("音频");
-
-// ---------- 本地存储键名（与独立页 jiuzu-tixing 完全一致，共享设置）----------
-const 键_间隔 = "jiuzu_interval";
-const 键_音量 = "jiuzu_volume";
-const 键_网络音乐 = "jiuzu_music_url";
-
-// ---------- 安全的本地存储读写（隐私模式 / 存储禁用 / 配额满 时会抛错，必须兜底）----------
-function 读取存储(键) {
-  try {
-    return localStorage.getItem(键);
-  } catch (e) {
-    return null; // 读取失败则视为无值
-  }
-}
-function 写入存储(键, 值) {
-  try {
-    localStorage.setItem(键, 值);
-  } catch (e) {
-    // 静默忽略：不让存储异常中断主流程
-  }
-}
-
-// ---------- 运行时状态 ----------
-const 状态 = {
-  间隔分钟: 45,            // 提醒间隔（分钟）
-  音量: 0.7,              // 0~1
-  运行中: false,          // 是否正在倒计时
-  目标结束时刻: 0,        // 时间戳（毫秒）：倒计时归零的时刻
-  暂停剩余毫秒: 45 * 60 * 1000, // 暂停时保留的剩余时间
-  音乐文件: null,         // 用户选择的 File 对象
-  音乐URL: "",            // <audio> 当前使用的 src（本地为 blob: 对象地址，网络为 http(s) 直链）
-  音源类型: "本地",       // "本地" | "网络"，当前生效的音源
-  网络地址: "",           // 用户输入并持久化的网络音乐地址
-  提醒中: false,          // 是否正处于提醒弹窗
-  蜂鸣定时器: null        // Web Audio 蜂鸣循环句柄
-};
-
-// Web Audio 相关（用于无音乐时的兜底提示音）
-let 音频上下文 = null;
-// 每秒刷新显示用的定时器
-let 心跳定时器 = null;
-
-// =========================================================
-// 计时状态外观：统一驱动 倒计时 / 状态行 / 状态文案 / 开始暂停按钮
-// 状态名取值："未开始" | "计时中" | "已暂停" | "时间到"
-// =========================================================
-function 设置计时状态(状态名) {
-  // 倒计时颜色：仅计时中染朱砂，其余回到墨色
-  倒计时元素.classList.toggle("运行中", 状态名 === "计时中");
-  倒计时元素.classList.toggle("已暂停", 状态名 === "已暂停");
-
-  // 状态行圆点：时间到沿用「计时中」的脉动效果以引人注意
-  const 圆点类 = (状态名 === "时间到") ? "计时中" : 状态名;
-  ["未开始", "计时中", "已暂停"].forEach(c => 状态行元素.classList.toggle(c, c === 圆点类));
-
-  // 状态文案
-  状态文案元素.textContent = (状态名 === "时间到") ? "时间到！请起身活动" : 状态名;
-
-  // 开始暂停按钮：默认「开始」/ 计时中「暂停」/ 暂停后「继续」
-  if (状态名 === "计时中") {
-    开始暂停按钮.textContent = "暂停";
-    开始暂停按钮.className = "按钮 主按钮 运行中";
-  } else if (状态名 === "已暂停") {
-    开始暂停按钮.textContent = "继续";
-    开始暂停按钮.className = "按钮 金按钮 继续";
-  } else {
-    开始暂停按钮.textContent = "开始";
-    开始暂停按钮.className = "按钮 主按钮";
-  }
-}
-
-// =========================================================
-// 初始化：恢复持久化设置
-// =========================================================
-function 初始化() {
-  // 恢复间隔
-  const 存间隔 = parseInt(读取存储(键_间隔), 10);
-  if (!isNaN(存间隔) && 存间隔 >= 1 && 存间隔 <= 180) {
-    状态.间隔分钟 = 存间隔;
-  }
-  // 恢复音量
-  const 存音量 = parseInt(读取存储(键_音量), 10);
-  if (!isNaN(存音量) && 存音量 >= 0 && 存音量 <= 100) {
-    状态.音量 = 存音量 / 100;
-  }
-
-  // 回填界面
-  间隔输入.value = 状态.间隔分钟;
-  音量输入.value = Math.round(状态.音量 * 100);
-  音量显示.textContent = Math.round(状态.音量 * 100) + "%";
-  音频元素.volume = 状态.音量;
-  高亮预设(状态.间隔分钟);
-
-  // 恢复网络音乐（本地文件无法持久化，故网络链接优先回填）
-  const 存网络 = 读取存储(键_网络音乐);
-  if (存网络) {
-    状态.网络地址 = 存网络;
-    状态.音源类型 = "网络";
-    网络输入.value = 存网络;
-    状态.音乐URL = 存网络;          // 设置 src 但不在初始化时播放（浏览器也会拦截）
-    音频元素.src = 存网络;
-    音频元素.load();
-    本地音源区.style.display = "none";
-    网络区.style.display = "";
-    音源切换.querySelectorAll("button").forEach(b => {
-      b.classList.toggle("选中", b.dataset.音源 === "网络");
-    });
-    设置音乐名("已设置网络音乐：" + 存网络, true);
-  } else {
-    状态.音源类型 = "本地";
-    本地音源区.style.display = "";
-    网络区.style.display = "none";
-    设置音乐名("未选择（将使用默认提示音）", false);
-  }
-
-  // 初始显示
-  状态.暂停剩余毫秒 = 状态.间隔分钟 * 60 * 1000;
-  渲染倒计时(状态.暂停剩余毫秒);
-  设置计时状态("未开始");
-  更新通知界面();
-
-  // 绑定事件
-  绑定事件();
-}
-
-// =========================================================
-// 事件绑定
-// =========================================================
-function 绑定事件() {
-  开始暂停按钮.addEventListener("click", 切换开始暂停);
-  重置按钮.addEventListener("click", 重置);
-
-  间隔输入.addEventListener("change", () => {
-    let v = parseInt(间隔输入.value, 10);
-    if (isNaN(v)) v = 45;
-    v = Math.min(180, Math.max(1, v));
-    间隔输入.value = v;
-    状态.间隔分钟 = v;
-    写入存储(键_间隔, String(v));
-    高亮预设(v);
-    // 仅在未运行时更新待开始的剩余时间
-    if (!状态.运行中 && !状态.提醒中) {
-      状态.暂停剩余毫秒 = v * 60 * 1000;
-      渲染倒计时(状态.暂停剩余毫秒);
-    }
-  });
-
-  // 预设按钮
-  预设组.querySelectorAll("button").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const 分钟 = parseInt(btn.dataset.分钟, 10);
-      间隔输入.value = 分钟;
-      间隔输入.dispatchEvent(new Event("change"));
-    });
-  });
-
-  // 选择音乐文件（本地上传）
-  音乐输入.addEventListener("change", () => {
-    应用本地文件(音乐输入.files && 音乐输入.files[0]);
-  });
-
-  // 音源切换：本地上传 / 网络链接
-  音源切换.querySelectorAll("button").forEach(btn => {
-    btn.addEventListener("click", () => 切换音源(btn.dataset.音源));
-  });
-
-  // 网络链接：加载并试听
-  加载试听按钮.addEventListener("click", () => 加载网络音乐(true));
-
-  // 音频加载失败（如网络链接非直链 / 跨域受限 / 已失效）→ 明确提示并回退蜂鸣
-  音频元素.addEventListener("error", () => {
-    if (状态.音源类型 === "网络" && 状态.音乐URL) {
-      设置音乐名("链接无法播放：可能不是音频直链、跨域受限或已失效", false, true);
-      状态.音乐URL = "";                  // 标记不可用，后续提醒走蜂鸣兜底
-      音频元素.removeAttribute("src");
-      // 若正处于提醒弹窗，立即回退到蜂鸣兜底，避免弹窗开着却静默无声
-      // （此时 play() 可能早已 resolve，.catch 不会再次触发，必须在此兜底）
-      if (状态.提醒中) {
-        音频元素.pause();
-        开始蜂鸣循环();
-      }
-    }
-  });
-
-  // 试听
-  试听按钮.addEventListener("click", () => {
-    解锁音频();          // 用户手势中解锁 AudioContext
-    if (当前有音乐()) {
-      音频元素.loop = false; // 试听不循环，避免与上轮 loop 状态串扰
-      音频元素.currentTime = 0;
-      音频元素.volume = 状态.音量;
-      音频元素.play().catch(() => {});
-      // 试听 3 秒后自动停止（不循环占用）
-      setTimeout(() => { if (!状态.提醒中) 音频元素.pause(); }, 3000);
-    } else {
-      // 没有音乐则试听蜂鸣
-      播放蜂鸣();
-    }
-  });
-
-  // 音量调节
-  音量输入.addEventListener("input", () => {
-    const 百分比 = parseInt(音量输入.value, 10);
-    状态.音量 = 百分比 / 100;
-    音量显示.textContent = 百分比 + "%";
-    音频元素.volume = 状态.音量;
-    写入存储(键_音量, String(百分比));
-  });
-
-  // 桌面通知
-  通知按钮.addEventListener("click", 请求通知权限);
-
-  // 关闭提醒
-  我知道了按钮.addEventListener("click", 关闭提醒);
-
-  // 从后台切回时立即校正剩余时间
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden && 状态.运行中 && !状态.提醒中) {
-      校正倒计时();
-    }
-  });
-
-  // 页面卸载时释放本地上传生成的 ObjectURL，避免内存泄漏（网络地址非对象 URL，绝不 revoke）
-  window.addEventListener("beforeunload", () => {
-    if (状态.音乐URL && 状态.音乐URL.indexOf("blob:") === 0) {
-      URL.revokeObjectURL(状态.音乐URL);
-      状态.音乐URL = "";
-    }
-  });
-}
-
-// =========================================================
-// 计时逻辑（基于时间戳）
-// =========================================================
-function 切换开始暂停() {
-  解锁音频(); // 用户手势中解锁音频上下文
-
-  if (状态.提醒中) return; // 弹窗期间忽略
-
-  if (状态.运行中) {
-    // 暂停：保留剩余时间
-    状态.暂停剩余毫秒 = Math.max(0, 状态.目标结束时刻 - Date.now());
-    状态.运行中 = false;
-    停止心跳();
-    设置计时状态("已暂停");
-    渲染倒计时(状态.暂停剩余毫秒);
-  } else {
-    // 开始 / 继续
-    开始计时(状态.暂停剩余毫秒 > 0 ? 状态.暂停剩余毫秒 : 状态.间隔分钟 * 60 * 1000);
-  }
-}
-
-function 开始计时(时长毫秒) {
-  状态.目标结束时刻 = Date.now() + 时长毫秒;
-  状态.运行中 = true;
-  设置计时状态("计时中");
-  启动心跳();
-  校正倒计时();
-}
-
-function 重置() {
-  状态.运行中 = false;
-  状态.提醒中 = false;
-  状态.暂停剩余毫秒 = 状态.间隔分钟 * 60 * 1000;
-  停止心跳();
-  停止提醒声音();
-  提醒弹窗.classList.remove("显示");
-  设置计时状态("未开始");
-  渲染倒计时(状态.暂停剩余毫秒);
-}
-
-// 心跳：依据时间戳刷新显示，归零则触发提醒
-function 启动心跳() {
-  停止心跳();
-  心跳定时器 = setInterval(() => {
-    if (!状态.运行中) return;
-    const 剩余 = 状态.目标结束时刻 - Date.now();
-    if (剩余 <= 0) {
-      渲染倒计时(0);
-      触发提醒();
-    } else {
-      渲染倒计时(剩余);
-    }
-  }, 250);
-}
-
-function 停止心跳() {
-  if (心跳定时器) { clearInterval(心跳定时器); 心跳定时器 = null; }
-}
-
-// 从后台返回时校正（核心：用时间戳纠正被节流的时间差）
-function 校正倒计时() {
-  if (!状态.运行中) return;
-  const 剩余 = 状态.目标结束时刻 - Date.now();
-  if (剩余 <= 0) {
-    渲染倒计时(0);
-    触发提醒();
-  } else {
-    渲染倒计时(剩余);
-  }
-}
-
-// 把毫秒渲染成 MM:SS 或 HH:MM:SS
-function 渲染倒计时(毫秒) {
-  let 总秒 = Math.max(0, Math.floor(毫秒 / 1000));
-  const 时 = Math.floor(总秒 / 3600);
-  总秒 %= 3600;
-  const 分 = Math.floor(总秒 / 60);
-  const 秒 = 总秒 % 60;
-  const 补 = n => String(n).padStart(2, "0");
-  if (时 > 0) {
-    倒计时元素.textContent = `${补(时)}:${补(分)}:${补(秒)}`;
-  } else {
-    倒计时元素.textContent = `${补(分)}:${补(秒)}`;
-  }
-}
-
-function 高亮预设(分钟) {
-  预设组.querySelectorAll("button").forEach(b => {
-    b.classList.toggle("选中", parseInt(b.dataset.分钟, 10) === 分钟);
-  });
-}
-
-// =========================================================
-// 提醒触发与声音
-// =========================================================
-function 触发提醒() {
-  if (状态.提醒中) return;
-  状态.提醒中 = true;
-  状态.运行中 = false;
-  停止心跳();
-  设置计时状态("时间到");
-
-  // 桌面通知（若已授权）
-  发送桌面通知();
-
-  // 播放提示音（循环直到关闭）
-  播放提醒声音();
-
-  // 显示弹窗
-  提醒弹窗.classList.add("显示");
-  我知道了按钮.focus(); // 无障碍：聚焦到关闭按钮
-}
-
-function 关闭提醒() {
-  状态.提醒中 = false;
-  停止提醒声音();
-  提醒弹窗.classList.remove("显示");
-  // 自动开始下一轮倒计时
-  状态.暂停剩余毫秒 = 状态.间隔分钟 * 60 * 1000;
-  开始计时(状态.暂停剩余毫秒);
-}
-
-// 播放提醒音：有音乐则循环播放 <audio>，否则用 Web Audio 蜂鸣循环
-function 播放提醒声音() {
-  解锁音频();
-  if (当前有音乐()) {
-    音频元素.currentTime = 0;
-    音频元素.volume = 状态.音量;
-    音频元素.loop = true;
-    音频元素.play().catch(() => {
-      // 万一自动播放被拦，退回到蜂鸣
-      开始蜂鸣循环();
-    });
-  } else {
-    开始蜂鸣循环();
-  }
-}
-
-function 停止提醒声音() {
-  音频元素.pause();
-  音频元素.loop = false;
-  if (状态.蜂鸣定时器) {
-    clearInterval(状态.蜂鸣定时器);
-    状态.蜂鸣定时器 = null;
-  }
-}
-
-// 当前是否有可用音乐（本地或网络任一音源均可）
-function 当前有音乐() {
-  return !!状态.音乐URL;
-}
-
-// 统一设置音乐状态文案（已选=竹青 / 失败=赭橙 / 否则=淡墨）
-function 设置音乐名(文本, 已选, 失败) {
-  音乐名元素.textContent = 文本;
-  音乐名元素.classList.toggle("已选", !!已选);
-  音乐名元素.classList.toggle("失败", !!失败);
-}
-
-// 应用本地文件：创建对象 URL 并设置音频源（自带旧对象 URL 释放，绝不误 revoke 网络地址）
-function 应用本地文件(文件) {
-  if (状态.音乐URL && 状态.音乐URL.indexOf("blob:") === 0) {
-    URL.revokeObjectURL(状态.音乐URL); // 仅当确为本地对象 URL 才释放
-  }
-  状态.音乐URL = "";
-  if (文件) {
-    状态.音乐文件 = 文件;
-    状态.音乐URL = URL.createObjectURL(文件);
-    音频元素.src = 状态.音乐URL;
-    音频元素.load();
-    设置音乐名("已选择本地文件：" + 文件.name, true);
-  } else {
-    状态.音乐文件 = null;
-    音频元素.removeAttribute("src");
-    设置音乐名("未选择（将使用默认提示音）", false);
-  }
-}
-
-// 切换音源：本地上传 <-> 网络链接
-function 切换音源(类型) {
-  if (类型 !== "本地" && 类型 !== "网络") return;
-  if (类型 === 状态.音源类型) return;
-  // 离开旧音源：仅释放本地对象 URL（网络地址非对象 URL，绝不 revoke）
-  if (状态.音乐URL && 状态.音乐URL.indexOf("blob:") === 0) {
-    URL.revokeObjectURL(状态.音乐URL);
-  }
-  状态.音乐URL = "";
-  状态.音乐文件 = null;
-  音频元素.removeAttribute("src");
-
-  状态.音源类型 = 类型;
-  音源切换.querySelectorAll("button").forEach(b => {
-    b.classList.toggle("选中", b.dataset.音源 === 类型);
-  });
-
-  if (类型 === "本地") {
-    本地音源区.style.display = "";
-    网络区.style.display = "none";
-    // 切回本地时若文件选择框仍有文件，自动复用
-    if (音乐输入.files && 音乐输入.files[0]) {
-      应用本地文件(音乐输入.files[0]);
-    } else {
-      设置音乐名("未选择（将使用默认提示音）", false);
-    }
-  } else {
-    本地音源区.style.display = "none";
-    网络区.style.display = "";
-    // 若此前已保存网络地址，自动回填并恢复，无需重新加载
-    if (状态.网络地址) {
-      网络输入.value = 状态.网络地址;
-      状态.音乐URL = 状态.网络地址;
-      音频元素.src = 状态.网络地址;
-      音频元素.load();
-      设置音乐名("已设置网络音乐：" + 状态.网络地址, true);
-    } else {
-      设置音乐名("请输入并加载网络音乐链接", false);
-    }
-  }
-}
-
-// 加载网络音乐：校验 + 持久化 + 试听预览
-function 加载网络音乐(是否试听) {
-  解锁音频();
-  const 原 = (网络输入.value || "").trim();
-  if (!原) {
-    设置音乐名("请先粘贴音频链接", false, true);
-    return;
-  }
-  if (!/^https?:\/\//i.test(原)) {
-    设置音乐名("链接格式不正确：需以 http:// 或 https:// 开头", false, true);
-    return;
-  }
-  const 混合内容 = (location.protocol === "https:" && /^http:\/\//i.test(原));
-  写入存储(键_网络音乐, 原);
-  状态.网络地址 = 原;
-  // 若之前是本地音源，释放其对象 URL
-  if (状态.音乐URL && 状态.音乐URL.indexOf("blob:") === 0) {
-    URL.revokeObjectURL(状态.音乐URL);
-  }
-  状态.音源类型 = "网络";
-  状态.音乐文件 = null;
-  状态.音乐URL = 原;
-  音频元素.src = 原;
-  音频元素.load();
-  if (混合内容) {
-    设置音乐名("已设置网络音乐（警告：https 页面用 http 链接可能被拦截，建议换 https）：" + 原, false, true);
-  } else {
-    设置音乐名("已设置网络音乐：" + 原, true);
-  }
-  if (是否试听) 预览网络音乐();
-}
-
-// 预览网络音乐：不循环，3 秒后自动停止；加载/播放失败则回退蜂鸣，不静默失败
-function 预览网络音乐() {
-  音频元素.loop = false;
-  音频元素.currentTime = 0;
-  音频元素.volume = 状态.音量;
-  音频元素.play().catch(() => {
-    设置音乐名("链接无法播放：可能不是音频直链、跨域受限或已失效", false, true);
-    状态.音乐URL = "";                 // 标记不可用，后续提醒走蜂鸣兜底
-    音频元素.removeAttribute("src");
-    播放蜂鸣();                         // 用蜂鸣给出反馈
-  });
-  setTimeout(() => { if (!状态.提醒中) 音频元素.pause(); }, 3000);
-}
-
-// ---- Web Audio 兜底蜂鸣 ----
-// 在首次用户交互时创建/恢复 AudioContext，绕过自动播放限制
-function 解锁音频() {
-  try {
-    if (!音频上下文) {
-      音频上下文 = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    if (音频上下文.state === "suspended") {
-      音频上下文.resume();
-    }
-  } catch (e) {
-    // 某些环境不支持，忽略
-  }
-}
-
-function 播放蜂鸣() {
-  if (!音频上下文) return;
-  const 有效音量 = 状态.音量;
-  if (有效音量 <= 0) return; // 静音时彻底不发声
-  const 上下文 = 音频上下文;
-  const 振荡器 = 上下文.createOscillator();
-  const 增益 = 上下文.createGain();
-  振荡器.type = "sine";
-  振荡器.frequency.value = 880; // 提示音频率
-  增益.gain.value = 0.0001;
-  振荡器.connect(增益);
-  增益.connect(上下文.destination);
-  const 现在 = 上下文.currentTime;
-  // 简单包络，避免爆音（指数斜坡不可为 0，用极小值过渡）
-  增益.gain.setValueAtTime(0.0001, 现在);
-  增益.gain.exponentialRampToValueAtTime(有效音量, 现在 + 0.02);
-  增益.gain.exponentialRampToValueAtTime(0.0001, 现在 + 0.4);
-  振荡器.start(现在);
-  振荡器.stop(现在 + 0.42);
-}
-
-function 开始蜂鸣循环() {
-  if (状态.蜂鸣定时器) return;
-  播放蜂鸣(); // 先响一声
-  状态.蜂鸣定时器 = setInterval(播放蜂鸣, 1800); // 之后每 1.8 秒一声
-}
-
-// =========================================================
-// 桌面通知
-// =========================================================
-function 请求通知权限() {
-  if (!("Notification" in window)) {
-    通知状态.textContent = "浏览器不支持";
-    return;
-  }
-  if (Notification.permission === "granted") {
-    更新通知界面();
-    return;
-  }
-  Notification.requestPermission().then(() => {
-    更新通知界面();
-  });
-}
-
-function 更新通知界面() {
-  if (!("Notification" in window)) {
-    通知状态.textContent = "不支持";
-    通知按钮.textContent = "不可用";
-    通知按钮.disabled = true;
-    通知按钮.className = "按钮 次按钮";
-    return;
-  }
-  if (Notification.permission === "granted") {
-    通知状态.textContent = "已开启";
-    通知状态.className = "通知状态 已开启";
-    通知按钮.textContent = "已开启";
-    通知按钮.className = "按钮 已开启";
-    通知按钮.disabled = true;
-  } else if (Notification.permission === "denied") {
-    通知状态.textContent = "已拒绝";
-    通知状态.className = "通知状态 已拒绝";
-    通知按钮.textContent = "被拒绝";
-    通知按钮.className = "按钮 已拒绝";
-    通知按钮.disabled = true;
-  } else {
-    通知状态.textContent = "未开启";
-    通知状态.className = "通知状态";
-    通知按钮.textContent = "开启通知";
-    通知按钮.className = "按钮 次按钮";
-    通知按钮.disabled = false;
-  }
-}
-
-function 发送桌面通知() {
-  if (!("Notification" in window) || Notification.permission !== "granted") return;
-  try {
-    new Notification("该起身活动了！", {
-      body: "您已久坐一段时间，起来走走、伸展一下吧～"
-    });
-  } catch (e) {
-    // 忽略
-  }
-}
-
-// =========================================================
-// 启动
-// =========================================================
-初始化();
-</script>
 </body>
 </html>
