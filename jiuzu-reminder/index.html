@@ -55,6 +55,37 @@
     font-size: 14px;
   }
 
+  /* 返回门户首页入口：标题上方靠左的小胶囊按钮，视觉克制不抢戏
+     文字色单独用 #6b7686（白底约 4.6:1，满足 WCAG AA 4.5:1），
+     不复用 --次文字(#7a869a，白底仅约 3.68:1，不达标） */
+  .返回首页 {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 14px;
+    padding: 6px 14px;
+    font-size: 13px;
+    line-height: 1;
+    color: #6b7686;
+    text-decoration: none;
+    background: var(--卡片);
+    border: 1px solid var(--边框);
+    border-radius: 999px;
+    transition: all .15s;
+  }
+  .返回首页:hover {
+    color: var(--主色深);          /* #3a6fd6 白底 4.75:1，达标；边框不算文字对比度，仍可用主色 */
+    border-color: var(--主色);
+    box-shadow: var(--阴影);
+  }
+  /* 键盘 Tab 聚焦时的主题色焦点环（只写 :focus-visible，不移除默认焦点环） */
+  .返回首页:focus-visible {
+    outline: 2px solid var(--主色);
+    outline-offset: 2px;
+  }
+  /* 箭头为纯字符装饰，无需被读屏朗读 */
+  .返回首页 .箭头 { font-size: 15px; }
+
   /* 卡片通用 */
   .卡片 {
     background: var(--卡片);
@@ -293,6 +324,12 @@
 </head>
 <body>
   <div class="容器">
+    <!-- 返回门户首页：用相对路径 ../ 指向 /game-account-manager/
+         （GitHub Pages 项目页下写成根路径 / 会跳到域名根，导致 404，务必保持相对路径） -->
+    <a class="返回首页" href="../" title="返回首页">
+      <span class="箭头" aria-hidden="true">&#8592;</span>返回首页
+    </a>
+
     <div class="标题">
       <h1>久坐提醒</h1>
       <p>坐得太久，记得起来活动一下身体 🌿</p>
