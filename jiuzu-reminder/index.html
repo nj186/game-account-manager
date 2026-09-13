@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>久坐提醒 · 该起身活动了</title>
+<style>
+  /* ===== 全局基础样式：浅色主题、柔和配色、圆角卡片 ===== */
+  :root {
+    --主色: #4f8cff;          /* 主色调：柔和蓝 */
+    --主色深: #3a6fd6;
+    --背景: #f4f7fb;          /* 页面背景 */
+    --卡片: #ffffff;          /* 卡片背景 */
+    --文字: #2b3445;          /* 主文字 */
+    --次文字: #7a869a;        /* 次要文字 */
+    --边框: #e6ebf2;          /* 边框线 */
+    --成功: #34c77b;          /* 成功绿 */
+    --警示: #ff7a59;          /* 提醒橙 */
+    --阴影: 0 8px 24px rgba(79, 140, 255, 0.10);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+    background: linear-gradient(160deg, #eef3fb 0%, #f6f0fb 100%);
+    color: var(--文字);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .容器 {
+    width: 100%;
+    max-width: 460px;
+  }
+
+  /* 标题区 */
+  .标题 {
+    text-align: center;
+    margin-bottom: 22px;
+  }
+  .标题 h1 {
+    margin: 0;
+    font-size: 26px;
+    letter-spacing: 1px;
+  }
+  .标题 p {
+    margin: 6px 0 0;
+    color: var(--次文字);
+    font-size: 14px;
+  }
+
+  /* 卡片通用 */
+  .卡片 {
+    background: var(--卡片);
+    border: 1px solid var(--边框);
+    border-radius: 18px;
+    padding: 22px;
+    margin-bottom: 18px;
+    box-shadow: var(--阴影);
+  }
+  .卡片 h2 {
+    margin: 0 0 16px;
+    font-size: 16px;
+    color: var(--主色深);
+  }
+
+  /* 倒计时大显示 */
+  .倒计时区 {
+    text-align: center;
+    padding: 30px 22px;
+  }
+  .倒计时 {
+    font-size: 72px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 2px;
+    color: var(--文字);
+    line-height: 1.1;
+  }
+  .倒计时.运行中 { color: var(--主色); }
+  .倒计时.已暂停 { color: var(--次文字); }
+  .状态文字 {
+    margin-top: 8px;
+    font-size: 14px;
+    color: var(--次文字);
+  }
+
+  /* 表单元素 */
+  .字段 { margin-bottom: 18px; }
+  .字段:last-child { margin-bottom: 0; }
+  .字段标签 {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 8px;
+    color: var(--文字);
+  }
+  .字段标签 .提示 {
+    color: var(--次文字);
+    font-size: 12px;
+    margin-left: 6px;
+  }
+
+  input[type="number"] {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 15px;
+    border: 1px solid var(--边框);
+    border-radius: 10px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  input[type="number"]:focus { border-color: var(--主色); }
+
+  .预设组 {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .预设组 button {
+    flex: 1;
+    padding: 8px 0;
+    font-size: 14px;
+    border: 1px solid var(--边框);
+    background: #fafcff;
+    color: var(--文字);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .预设组 button:hover { border-color: var(--主色); color: var(--主色); }
+  .预设组 button.选中 {
+    background: var(--主色);
+    border-color: var(--主色);
+    color: #fff;
+  }
+
+  /* 按钮通用 */
+  .按钮 {
+    padding: 11px 16px;
+    font-size: 15px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all .15s;
+    background: #eef2f8;
+    color: var(--文字);
+  }
+  .按钮:hover { filter: brightness(0.97); }
+  .按钮:active { transform: translateY(1px); }
+  .按钮.主按钮 { background: var(--主色); color: #fff; }
+  .按钮.主按钮:hover { background: var(--主色深); }
+  .按钮.次按钮 { background: #eef2f8; }
+
+  .控制组 {
+    display: flex;
+    gap: 12px;
+    margin-top: 6px;
+  }
+  .控制组 .按钮 { flex: 1; }
+
+  /* 音乐选择行 */
+  .音乐行 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .音乐行 input[type="file"] {
+    flex: 1;
+    font-size: 13px;
+    color: var(--次文字);
+  }
+  .音乐名 {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--次文字);
+    word-break: break-all;
+  }
+  .音乐名.已选 { color: var(--成功); }
+
+  /* 音量 */
+  input[type="range"] {
+    width: 100%;
+    accent-color: var(--主色);
+  }
+  .音量显示 {
+    float: right;
+    font-size: 13px;
+    color: var(--次文字);
+  }
+
+  .通知行 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .通知状态 { font-size: 13px; color: var(--次文字); }
+
+  /* 提醒弹窗遮罩 */
+  .遮罩 {
+    position: fixed;
+    inset: 0;
+    background: rgba(43, 52, 69, 0.45);
+    backdrop-filter: blur(3px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+  }
+  .遮罩.显示 { display: flex; }
+  .弹窗 {
+    background: var(--卡片);
+    border-radius: 22px;
+    padding: 36px 32px;
+    text-align: center;
+    max-width: 360px;
+    width: calc(100% - 48px);
+    box-shadow: 0 16px 48px rgba(0,0,0,.2);
+    animation: 弹出 .25s ease;
+  }
+  @keyframes 弹出 {
+    from { transform: scale(.9); opacity: 0; }
+    to   { transform: scale(1);  opacity: 1; }
+  }
+  .弹窗 .图标 { font-size: 54px; }
+  .弹窗 h2 {
+    margin: 12px 0 8px;
+    font-size: 24px;
+    color: var(--警示);
+  }
+  .弹窗 p {
+    margin: 0 0 22px;
+    color: var(--次文字);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .页脚 {
+    text-align: center;
+    font-size: 12px;
+    color: var(--次文字);
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+  <div class="容器">
+    <div class="标题">
+      <h1>久坐提醒</h1>
+      <p>坐得太久，记得起来活动一下身体 🌿</p>
+    </div>
+
+    <!-- 倒计时显示卡片 -->
+    <div class="卡片 倒计时区">
+      <div id="倒计时" class="倒计时 已暂停">45:00</div>
+      <div id="状态文字" class="状态文字">未开始</div>
+    </div>
+
+    <!-- 计时控制 -->
+    <div class="卡片">
+      <div class="控制组">
+        <button id="开始暂停按钮" class="按钮 主按钮">开始</button>
+        <button id="重置按钮" class="按钮 次按钮">重置</button>
+      </div>
+    </div>
+
+    <!-- 设置卡片 -->
+    <div class="卡片">
+      <h2>提醒设置</h2>
+
+      <!-- 提醒间隔 -->
+      <div class="字段">
+        <label class="字段标签" for="间隔输入">
+          提醒间隔（分钟）<span class="提示">1–180</span>
+        </label>
+        <input id="间隔输入" type="number" min="1" max="180" step="1" value="45">
+        <div class="预设组" id="预设组">
+          <button data-分钟="30">30</button>
+          <button data-分钟="45" class="选中">45</button>
+          <button data-分钟="60">60</button>
+          <button data-分钟="90">90</button>
+        </div>
+      </div>
+
+      <!-- 提示音乐 -->
+      <div class="字段">
+        <label class="字段标签" for="音乐输入">提示音乐</label>
+        <div class="音乐行">
+          <input id="音乐输入" type="file" accept="audio/*">
+          <button id="试听按钮" class="按钮 次按钮">试听</button>
+        </div>
+        <div id="音乐名" class="音乐名">未选择（将使用默认蜂鸣声）</div>
+      </div>
+
+      <!-- 音量 -->
+      <div class="字段">
+        <label class="字段标签" for="音量输入">
+          音量<span class="音量显示" id="音量显示">70%</span>
+        </label>
+        <input id="音量输入" type="range" min="0" max="100" value="70">
+      </div>
+
+      <!-- 桌面通知 -->
+      <div class="字段">
+        <div class="通知行">
+          <div>
+            <label class="字段标签" style="margin-bottom:2px;">桌面通知</label>
+            <span class="通知状态" id="通知状态">未开启</span>
+          </div>
+          <button id="通知按钮" class="按钮 次按钮">开启通知</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="页脚">设置会自动保存 · 刷新页面后需重新选择音乐文件</div>
+  </div>
+
+  <!-- 提醒弹窗 -->
+  <div class="遮罩" id="遮罩">
+    <div class="弹窗">
+      <div class="图标">🧍💨</div>
+      <h2>该起身活动了！</h2>
+      <p>您已久坐一段时间，起来走走、伸展一下，喝口水吧～</p>
+      <button id="知道了按钮" class="按钮 主按钮" style="width:100%;">我知道了</button>
+    </div>
+  </div>
+
+  <!-- 隐藏的音频播放器 -->
+  <audio id="音频" loop preload="auto"></audio>
+
+<script>
+"use strict";
+/* =========================================================
+ * 久坐提醒 · 单文件实现
+ * 关键点：
+ *  1) 基于时间戳计时（记录目标结束时刻），避免后台被节流导致计时漂移
+ *  2) 音乐用 <audio> + URL.createObjectURL；未选则用 Web Audio 蜂鸣兜底
+ *  3) 浏览器自动播放限制：AudioContext 在用户交互后初始化/解锁
+ *  4) 间隔、音量持久化到 localStorage；音频文件对象无法持久化
+ * ========================================================= */
+
+// ---------- DOM 引用 ----------
+const 倒计时元素   = document.getElementById("倒计时");
+const 状态文字元素 = document.getElementById("状态文字");
+const 开始暂停按钮 = document.getElementById("开始暂停按钮");
+const 重置按钮     = document.getElementById("重置按钮");
+const 间隔输入     = document.getElementById("间隔输入");
+const 预设组       = document.getElementById("预设组");
+const 音乐输入     = document.getElementById("音乐输入");
+const 试听按钮     = document.getElementById("试听按钮");
+const 音乐名元素   = document.getElementById("音乐名");
+const 音量输入     = document.getElementById("音量输入");
+const 音量显示     = document.getElementById("音量显示");
+const 通知按钮     = document.getElementById("通知按钮");
+const 通知状态     = document.getElementById("通知状态");
+const 遮罩元素     = document.getElementById("遮罩");
+const 知道了按钮   = document.getElementById("知道了按钮");
+const 音频元素     = document.getElementById("音频");
+
+// ---------- 本地存储键名 ----------
+const 键_间隔 = "jiuzu_interval";
+const 键_音量 = "jiuzu_volume";
+
+// ---------- 安全的本地存储读写（隐私模式 / 存储禁用 / 配额满 时会抛错，必须兜底） ----------
+function 读取存储(键) {
+  try {
+    return localStorage.getItem(键);
+  } catch (e) {
+    return null; // 读取失败则视为无值
+  }
+}
+function 写入存储(键, 值) {
+  try {
+    localStorage.setItem(键, 值);
+  } catch (e) {
+    // 静默忽略：不让存储异常中断主流程
+  }
+}
+
+// ---------- 运行时状态 ----------
+const 状态 = {
+  间隔分钟: 45,            // 提醒间隔（分钟）
+  音量: 0.7,              // 0~1
+  运行中: false,          // 是否正在倒计时
+  目标结束时刻: 0,        // 时间戳（毫秒）：倒计时归零的时刻
+  暂停剩余毫秒: 45 * 60 * 1000, // 暂停时保留的剩余时间
+  音乐文件: null,         // 用户选择的 File 对象
+  音乐URL: "",            // createObjectURL 生成的地址
+  提醒中: false,          // 是否正处于提醒弹窗
+  蜂鸣定时器: null        // Web Audio 蜂鸣循环句柄
+};
+
+// Web Audio 相关（用于无音乐时的兜底提示音）
+let 音频上下文 = null;
+
+// 每秒刷新显示用的定时器
+let 心跳定时器 = null;
+
+// =========================================================
+// 初始化：恢复持久化设置
+// =========================================================
+function 初始化() {
+  // 恢复间隔
+  const 存间隔 = parseInt(读取存储(键_间隔), 10);
+  if (!isNaN(存间隔) && 存间隔 >= 1 && 存间隔 <= 180) {
+    状态.间隔分钟 = 存间隔;
+  }
+  // 恢复音量
+  const 存音量 = parseInt(读取存储(键_音量), 10);
+  if (!isNaN(存音量) && 存音量 >= 0 && 存音量 <= 100) {
+    状态.音量 = 存音量 / 100;
+  }
+
+  // 回填界面
+  间隔输入.value = 状态.间隔分钟;
+  音量输入.value = Math.round(状态.音量 * 100);
+  音量显示.textContent = Math.round(状态.音量 * 100) + "%";
+  音频元素.volume = 状态.音量;
+  高亮预设(状态.间隔分钟);
+
+  // 初始显示
+  状态.暂停剩余毫秒 = 状态.间隔分钟 * 60 * 1000;
+  渲染倒计时(状态.暂停剩余毫秒);
+  更新通知界面();
+
+  // 绑定事件
+  绑定事件();
+}
+
+// =========================================================
+// 事件绑定
+// =========================================================
+function 绑定事件() {
+  开始暂停按钮.addEventListener("click", 切换开始暂停);
+  重置按钮.addEventListener("click", 重置);
+
+  间隔输入.addEventListener("change", () => {
+    let v = parseInt(间隔输入.value, 10);
+    if (isNaN(v)) v = 45;
+    v = Math.min(180, Math.max(1, v));
+    间隔输入.value = v;
+    状态.间隔分钟 = v;
+    写入存储(键_间隔, String(v));
+    高亮预设(v);
+    // 仅在未运行时更新待开始的剩余时间
+    if (!状态.运行中 && !状态.提醒中) {
+      状态.暂停剩余毫秒 = v * 60 * 1000;
+      渲染倒计时(状态.暂停剩余毫秒);
+    }
+  });
+
+  // 预设按钮
+  预设组.querySelectorAll("button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const 分钟 = parseInt(btn.dataset.分钟, 10);
+      间隔输入.value = 分钟;
+      间隔输入.dispatchEvent(new Event("change"));
+    });
+  });
+
+  // 选择音乐文件
+  音乐输入.addEventListener("change", () => {
+    const 文件 = 音乐输入.files && 音乐输入.files[0];
+    if (状态.音乐URL) {
+      URL.revokeObjectURL(状态.音乐URL); // 释放旧地址
+      状态.音乐URL = "";
+    }
+    if (文件) {
+      状态.音乐文件 = 文件;
+      状态.音乐URL = URL.createObjectURL(文件);
+      音频元素.src = 状态.音乐URL;
+      音频元素.load();
+      音乐名元素.textContent = "已选择：" + 文件.name;
+      音乐名元素.classList.add("已选");
+    } else {
+      状态.音乐文件 = null;
+      音频元素.removeAttribute("src");
+      音乐名元素.textContent = "未选择（将使用默认蜂鸣声）";
+      音乐名元素.classList.remove("已选");
+    }
+  });
+
+  // 试听
+  试听按钮.addEventListener("click", () => {
+    解锁音频();          // 用户手势中解锁 AudioContext
+    if (状态.音乐URL) {
+      音频元素.loop = false; // 试听不循环，避免与上轮 loop 状态串扰
+      音频元素.currentTime = 0;
+      音频元素.volume = 状态.音量;
+      音频元素.play().catch(() => {});
+      // 试听 3 秒后自动停止（不循环占用）
+      setTimeout(() => { if (!状态.提醒中) 音频元素.pause(); }, 3000);
+    } else {
+      // 没有音乐则试听蜂鸣
+      播放蜂鸣();
+    }
+  });
+
+  // 音量调节
+  音量输入.addEventListener("input", () => {
+    const 百分比 = parseInt(音量输入.value, 10);
+    状态.音量 = 百分比 / 100;
+    音量显示.textContent = 百分比 + "%";
+    音频元素.volume = 状态.音量;
+    写入存储(键_音量, String(百分比));
+  });
+
+  // 桌面通知
+  通知按钮.addEventListener("click", 请求通知权限);
+
+  // 关闭提醒
+  知道了按钮.addEventListener("click", 关闭提醒);
+
+  // 从后台切回时立即校正剩余时间
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && 状态.运行中 && !状态.提醒中) {
+      校正倒计时();
+    }
+  });
+
+  // 页面卸载时释放 ObjectURL，避免内存泄漏
+  window.addEventListener("beforeunload", () => {
+    if (状态.音乐URL) {
+      URL.revokeObjectURL(状态.音乐URL);
+      状态.音乐URL = "";
+    }
+  });
+}
+
+// =========================================================
+// 计时逻辑（基于时间戳）
+// =========================================================
+function 切换开始暂停() {
+  解锁音频(); // 用户手势中解锁音频上下文
+
+  if (状态.提醒中) return; // 弹窗期间忽略
+
+  if (状态.运行中) {
+    // 暂停：保留剩余时间
+    状态.暂停剩余毫秒 = Math.max(0, 状态.目标结束时刻 - Date.now());
+    状态.运行中 = false;
+    停止心跳();
+    开始暂停按钮.textContent = "继续";
+    倒计时元素.classList.remove("运行中");
+    倒计时元素.classList.add("已暂停");
+    状态文字元素.textContent = "已暂停";
+    渲染倒计时(状态.暂停剩余毫秒);
+  } else {
+    // 开始 / 继续
+    开始计时(状态.暂停剩余毫秒 > 0 ? 状态.暂停剩余毫秒 : 状态.间隔分钟 * 60 * 1000);
+  }
+}
+
+function 开始计时(时长毫秒) {
+  状态.目标结束时刻 = Date.now() + 时长毫秒;
+  状态.运行中 = true;
+  开始暂停按钮.textContent = "暂停";
+  倒计时元素.classList.add("运行中");
+  倒计时元素.classList.remove("已暂停");
+  状态文字元素.textContent = "倒计时中…";
+  启动心跳();
+  校正倒计时();
+}
+
+function 重置() {
+  状态.运行中 = false;
+  状态.提醒中 = false;
+  状态.暂停剩余毫秒 = 状态.间隔分钟 * 60 * 1000;
+  停止心跳();
+  停止提醒声音();
+  遮罩元素.classList.remove("显示");
+  开始暂停按钮.textContent = "开始";
+  倒计时元素.classList.remove("运行中");
+  倒计时元素.classList.add("已暂停");
+  状态文字元素.textContent = "未开始";
+  渲染倒计时(状态.暂停剩余毫秒);
+}
+
+// 每秒心跳：依据时间戳刷新显示，归零则触发提醒
+function 启动心跳() {
+  停止心跳();
+  心跳定时器 = setInterval(() => {
+    if (!状态.运行中) return;
+    const 剩余 = 状态.目标结束时刻 - Date.now();
+    if (剩余 <= 0) {
+      渲染倒计时(0);
+      触发提醒();
+    } else {
+      渲染倒计时(剩余);
+    }
+  }, 250);
+}
+
+function 停止心跳() {
+  if (心跳定时器) { clearInterval(心跳定时器); 心跳定时器 = null; }
+}
+
+// 从后台返回时校正（核心：用时间戳纠正被节流的时间差）
+function 校正倒计时() {
+  if (!状态.运行中) return;
+  const 剩余 = 状态.目标结束时刻 - Date.now();
+  if (剩余 <= 0) {
+    渲染倒计时(0);
+    触发提醒();
+  } else {
+    渲染倒计时(剩余);
+  }
+}
+
+// 把毫秒渲染成 MM:SS 或 HH:MM:SS
+function 渲染倒计时(毫秒) {
+  let 总秒 = Math.max(0, Math.floor(毫秒 / 1000));
+  const 时 = Math.floor(总秒 / 3600);
+  总秒 %= 3600;
+  const 分 = Math.floor(总秒 / 60);
+  const 秒 = 总秒 % 60;
+  const 补 = n => String(n).padStart(2, "0");
+  if (时 > 0) {
+    倒计时元素.textContent = `${补(时)}:${补(分)}:${补(秒)}`;
+  } else {
+    倒计时元素.textContent = `${补(分)}:${补(秒)}`;
+  }
+}
+
+function 高亮预设(分钟) {
+  预设组.querySelectorAll("button").forEach(b => {
+    b.classList.toggle("选中", parseInt(b.dataset.分钟, 10) === 分钟);
+  });
+}
+
+// =========================================================
+// 提醒触发与声音
+// =========================================================
+function 触发提醒() {
+  if (状态.提醒中) return;
+  状态.提醒中 = true;
+  状态.运行中 = false;
+  停止心跳();
+  状态文字元素.textContent = "时间到！请起身活动";
+
+  // 桌面通知（若已授权）
+  发送桌面通知();
+
+  // 播放提示音（循环直到关闭）
+  播放提醒声音();
+
+  // 显示弹窗
+  遮罩元素.classList.add("显示");
+}
+
+function 关闭提醒() {
+  状态.提醒中 = false;
+  停止提醒声音();
+  遮罩元素.classList.remove("显示");
+  // 自动开始下一轮倒计时
+  状态.暂停剩余毫秒 = 状态.间隔分钟 * 60 * 1000;
+  开始计时(状态.暂停剩余毫秒);
+}
+
+// 播放提醒音：有音乐则循环播放 <audio>，否则用 Web Audio 蜂鸣循环
+function 播放提醒声音() {
+  解锁音频();
+  if (状态.音乐URL) {
+    音频元素.currentTime = 0;
+    音频元素.volume = 状态.音量;
+    音频元素.loop = true;
+    音频元素.play().catch(() => {
+      // 万一自动播放被拦，退回到蜂鸣
+      开始蜂鸣循环();
+    });
+  } else {
+    开始蜂鸣循环();
+  }
+}
+
+function 停止提醒声音() {
+  音频元素.pause();
+  音频元素.loop = false;
+  if (状态.蜂鸣定时器) {
+    clearInterval(状态.蜂鸣定时器);
+    状态.蜂鸣定时器 = null;
+  }
+}
+
+// ---- Web Audio 兜底蜂鸣 ----
+// 在首次用户交互时创建/恢复 AudioContext，绕过自动播放限制
+function 解锁音频() {
+  try {
+    if (!音频上下文) {
+      音频上下文 = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (音频上下文.state === "suspended") {
+      音频上下文.resume();
+    }
+  } catch (e) {
+    // 某些环境不支持，忽略
+  }
+}
+
+function 播放蜂鸣() {
+  if (!音频上下文) return;
+  const 有效音量 = 状态.音量;
+  if (有效音量 <= 0) return; // 静音时彻底不发声
+  const 上下文 = 音频上下文;
+  const 振荡器 = 上下文.createOscillator();
+  const 增益 = 上下文.createGain();
+  振荡器.type = "sine";
+  振荡器.frequency.value = 880; // 提示音频率
+  增益.gain.value = 0.0001;
+  振荡器.connect(增益);
+  增益.connect(上下文.destination);
+  const 现在 = 上下文.currentTime;
+  // 简单包络，避免爆音（指数斜坡不可为 0，用极小值过渡）
+  增益.gain.setValueAtTime(0.0001, 现在);
+  增益.gain.exponentialRampToValueAtTime(有效音量, 现在 + 0.02);
+  增益.gain.exponentialRampToValueAtTime(0.0001, 现在 + 0.4);
+  振荡器.start(现在);
+  振荡器.stop(现在 + 0.42);
+}
+
+function 开始蜂鸣循环() {
+  if (状态.蜂鸣定时器) return;
+  播放蜂鸣(); // 先响一声
+  状态.蜂鸣定时器 = setInterval(播放蜂鸣, 1800); // 之后每 1.8 秒一声
+}
+
+// =========================================================
+// 桌面通知
+// =========================================================
+function 请求通知权限() {
+  if (!("Notification" in window)) {
+    通知状态.textContent = "浏览器不支持";
+    return;
+  }
+  if (Notification.permission === "granted") {
+    通知状态.textContent = "已开启";
+    return;
+  }
+  Notification.requestPermission().then(结果 => {
+    更新通知界面();
+  });
+}
+
+function 更新通知界面() {
+  if (!("Notification" in window)) {
+    通知状态.textContent = "不支持";
+    通知按钮.textContent = "不可用";
+    通知按钮.disabled = true;
+    return;
+  }
+  if (Notification.permission === "granted") {
+    通知状态.textContent = "已开启";
+    通知按钮.textContent = "已开启";
+    通知按钮.disabled = true;
+  } else if (Notification.permission === "denied") {
+    通知状态.textContent = "已拒绝";
+    通知按钮.textContent = "被拒绝";
+    通知按钮.disabled = true;
+  } else {
+    通知状态.textContent = "未开启";
+    通知按钮.textContent = "开启通知";
+    通知按钮.disabled = false;
+  }
+}
+
+function 发送桌面通知() {
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
+  try {
+    new Notification("该起身活动了！", {
+      body: "您已久坐一段时间，起来走走、伸展一下吧～",
+      // 部分浏览器需要 icon，留空即可
+    });
+  } catch (e) {
+    // 忽略
+  }
+}
+
+// =========================================================
+// 启动
+// =========================================================
+初始化();
+</script>
+</body>
+</html>
